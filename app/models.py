@@ -2,6 +2,7 @@ from django.db import models
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.conf import settings
 import uuid
 
 CATEGORIA_CHOICES = [
@@ -48,6 +49,14 @@ class Competencia(models.Model):
 
 class Juez(models.Model):
     nombre = models.CharField(max_length=200)
+    # Link a un usuario (perfil). Nullable para facilitar migraciones desde datos existentes.
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='juez_profile'
+    )
     competencia = models.ForeignKey(
         Competencia, 
         on_delete=models.CASCADE, 
@@ -56,6 +65,15 @@ class Juez(models.Model):
     activo = models.BooleanField(default=True)
     
     def __str__(self):
+        if getattr(self, 'user', None):
+            try:
+                # user puede tener get_full_name
+                full = self.user.get_full_name()
+                if full:
+                    return f"{full} - {self.competencia.nombre}"
+                return f"{self.user.username} - {self.competencia.nombre}"
+            except Exception:
+                return f"{self.nombre} - {self.competencia.nombre}"
         return f"{self.nombre} - {self.competencia.nombre}"
 
 class Equipo(models.Model):

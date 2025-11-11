@@ -4,6 +4,8 @@ from django.urls import path
 from django.shortcuts import redirect
 from django.contrib import messages
 from django.utils import timezone
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 from .models import Competencia, Juez, Equipo, RegistroTiempo
 
@@ -58,6 +60,20 @@ class CompetenciaAdmin(admin.ModelAdmin):
         competencia = Competencia.objects.get(pk=pk)
         if competencia.iniciar_competencia():
             messages.success(request, f'La competencia "{competencia.nombre}" ha sido iniciada exitosamente.')
+            # Notify jueces via channels
+            channel_layer = get_channel_layer()
+            for juez in competencia.jueces.all():
+                group = f'juez_{juez.id}'
+                async_to_sync(channel_layer.group_send)(
+                    group,
+                    {
+                        'type': 'carrera.iniciada',
+                        'data': {
+                            'mensaje': 'La carrera ha iniciado',
+                            'competencia_id': competencia.id,
+                        }
+                    }
+                )
         else:
             messages.warning(request, f'La competencia "{competencia.nombre}" ya está en curso.')
         return redirect('admin:app_competencia_changelist')
@@ -72,9 +88,9 @@ class CompetenciaAdmin(admin.ModelAdmin):
 
 @admin.register(Juez)
 class JuezAdmin(admin.ModelAdmin):
-    list_display = ['nombre', 'competencia', 'activo']
+    list_display = ['nombre', 'user', 'competencia', 'activo']
     list_filter = ['competencia', 'activo']
-    search_fields = ['nombre']
+    search_fields = ['nombre', 'user__username', 'user__email']
 
 @admin.register(Equipo)
 class EquipoAdmin(admin.ModelAdmin):
