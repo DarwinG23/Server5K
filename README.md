@@ -67,6 +67,26 @@ El sistema funciona de forma local (LAN/Wi-Fi), garantizando tolerancia a fallos
 | `mqtt_client.py` | Cliente MQTT que escucha los mensajes publicados por los jueces en la red y los almacena en la base de datos Django (`RegistroTiempo`). |
 | `runmqtt.py` | Comando personalizado de Django para ejecutar el cliente MQTT desde la línea de comandos. |
 
+### Uso
+
+Para usar el módulo de mensajería:
+
+1. **Instalar dependencias adicionales**:
+   ```bash
+   pip install paho-mqtt
+   ```
+
+2. **Asegurarse de que Mosquitto esté corriendo**:
+   - Instala Mosquitto si no lo tienes: `sudo apt install mosquitto` (en Ubuntu/Debian).
+   - Inicia el broker: `mosquitto` (corre en localhost:1883 por defecto).
+
+3. **Ejecutar el cliente MQTT**:
+   ```bash
+    python manage.py runmqtt
+   ```
+
+El comando inicia el cliente MQTT que se conecta al broker local, se suscribe al tópico `carrera/registro/#` y procesa los mensajes entrantes de los jueces. Los tiempos se almacenan automáticamente en la base de datos como registros `RegistroTiempo`.
+
 ## Próximos pasos
 
 -   Implementar vistas y formularios para gestionar competencias y registros desde la interfaz pública.
