@@ -48,7 +48,24 @@ app/
 └── migrations/     # Migraciones de base de datos
 
 server/             # Configuración del proyecto Django
+
+mensajeria/         # Comunicación distribuida con MQTT
 ```
+
+## Módulo Mensajería
+
+El módulo `mensajeria` implementa la comunicación distribuida del sistema de registro de tiempos de la carrera atlética de 5 km organizada por la Universidad Nacional de Loja.
+
+Utiliza el protocolo MQTT (con el broker Mosquitto) para permitir que los jueces envíen los tiempos de llegada de los atletas hacia el servidor central Django, incluso en entornos con conectividad limitada o sin Internet.
+
+El sistema funciona de forma local (LAN/Wi-Fi), garantizando tolerancia a fallos y sincronización eventual.
+
+### ⚙️ Componentes principales
+
+| Archivo       | Descripción |
+|---------------|-------------|
+| `mqtt_client.py` | Cliente MQTT que escucha los mensajes publicados por los jueces en la red y los almacena en la base de datos Django (`RegistroTiempo`). |
+| `runmqtt.py` | Comando personalizado de Django para ejecutar el cliente MQTT desde la línea de comandos. |
 
 ## Próximos pasos
 
