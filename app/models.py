@@ -1,6 +1,8 @@
 from django.db import models
 from django.utils import timezone
 from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator, MaxValueValidator
+from django.conf import settings
 import uuid
 
 CATEGORIA_CHOICES = [
@@ -16,12 +18,45 @@ class Competencia(models.Model):
         choices=CATEGORIA_CHOICES
     )
     activa = models.BooleanField(default=True)
+    en_curso = models.BooleanField(default=False, verbose_name="En curso")
+    fecha_inicio = models.DateTimeField(null=True, blank=True, verbose_name="Fecha de inicio")
+    fecha_fin = models.DateTimeField(null=True, blank=True, verbose_name="Fecha de finalización")
+    
+    def iniciar_competencia(self):
+        """Inicia la competencia"""
+        if not self.en_curso:
+            self.en_curso = True
+            self.fecha_inicio = timezone.now()
+            self.save()
+            return True
+        return False
+    
+    def detener_competencia(self):
+        """Detiene la competencia"""
+        if self.en_curso:
+            self.en_curso = False
+            self.fecha_fin = timezone.now()
+            self.save()
+            return True
+        return False
     
     def __str__(self):
         return self.nombre
+    
+    class Meta:
+        verbose_name = "Competencia"
+        verbose_name_plural = "Competencias"
 
 class Juez(models.Model):
     nombre = models.CharField(max_length=200)
+    # Link a un usuario (perfil). Nullable para facilitar migraciones desde datos existentes.
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='juez_profile'
+    )
     competencia = models.ForeignKey(
         Competencia, 
         on_delete=models.CASCADE, 
@@ -30,6 +65,15 @@ class Juez(models.Model):
     activo = models.BooleanField(default=True)
     
     def __str__(self):
+        if getattr(self, 'user', None):
+            try:
+                # user puede tener get_full_name
+                full = self.user.get_full_name()
+                if full:
+                    return f"{full} - {self.competencia.nombre}"
+                return f"{self.user.username} - {self.competencia.nombre}"
+            except Exception:
+                return f"{self.nombre} - {self.competencia.nombre}"
         return f"{self.nombre} - {self.competencia.nombre}"
 
 class Equipo(models.Model):
@@ -62,7 +106,15 @@ class RegistroTiempo(models.Model):
         related_name='tiempos'
     )
     
+    # Keep a single integer field for total milliseconds (used for ordering/search)
     tiempo = models.BigIntegerField(help_text="Tiempo en milisegundos")
+
+    # New, more granular fields
+    horas = models.PositiveIntegerField(default=0, validators=[MinValueValidator(0)])
+    minutos = models.PositiveSmallIntegerField(default=0, validators=[MinValueValidator(0), MaxValueValidator(59)])
+    segundos = models.PositiveSmallIntegerField(default=0, validators=[MinValueValidator(0), MaxValueValidator(59)])
+    milisegundos = models.PositiveSmallIntegerField(default=0, validators=[MinValueValidator(0), MaxValueValidator(999)])
+
     timestamp = models.DateTimeField(default=timezone.now)
     
     @property
@@ -81,3 +133,36 @@ class RegistroTiempo(models.Model):
         
     def __str__(self):
         return f"Registro {self.id_registro} - Equipo: {self.equipo.nombre} - Tiempo: {self.tiempo} ms"
+
+    def save(self, *args, **kwargs):
+        """
+        Keep `tiempo` (total milliseconds) consistent with the granular fields.
+
+        - If any of the granular fields are non-zero, compute `tiempo` from them.
+        - Otherwise, if all granular fields are zero and `tiempo` is present, derive the granular
+          fields from `tiempo` so existing records are preserved.
+        """
+        try:
+            any_component = any([self.horas, self.minutos, self.segundos, self.milisegundos])
+        except Exception:
+            # In migrations or when fields aren't available yet, defer to default save
+            return super().save(*args, **kwargs)
+
+        if any_component:
+            total_ms = ((int(self.horas) * 3600 + int(self.minutos) * 60 + int(self.segundos)) * 1000) + int(self.milisegundos)
+            self.tiempo = int(total_ms)
+        else:
+            # derive components from existing tiempo
+            total = int(self.tiempo or 0)
+            ms = total % 1000
+            total_seconds = total // 1000
+            s = total_seconds % 60
+            total_minutes = total_seconds // 60
+            m = total_minutes % 60
+            h = total_minutes // 60
+            self.horas = h
+            self.minutos = m
+            self.segundos = s
+            self.milisegundos = ms
+
+        return super().save(*args, **kwargs)
