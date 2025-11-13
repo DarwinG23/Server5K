@@ -1,11 +1,13 @@
 from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin
 from django.utils.html import format_html
 from django.urls import path
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from django.contrib import messages
 from django.utils import timezone
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
+from django import forms
 
 from .models import Competencia, Juez, Equipo, RegistroTiempo
 
@@ -67,10 +69,12 @@ class CompetenciaAdmin(admin.ModelAdmin):
                 async_to_sync(channel_layer.group_send)(
                     group,
                     {
-                        'type': 'carrera.iniciada',
+                        'type': 'competencia.iniciada',
                         'data': {
-                            'mensaje': 'La carrera ha iniciado',
+                            'mensaje': 'La competencia ha iniciado. Ya puedes registrar tiempos.',
                             'competencia_id': competencia.id,
+                            'competencia_nombre': competencia.nombre,
+                            'en_curso': True,
                         }
                     }
                 )
@@ -82,15 +86,94 @@ class CompetenciaAdmin(admin.ModelAdmin):
         competencia = Competencia.objects.get(pk=pk)
         if competencia.detener_competencia():
             messages.success(request, f'La competencia "{competencia.nombre}" ha sido detenida exitosamente.')
+            # Notify jueces via channels
+            channel_layer = get_channel_layer()
+            for juez in competencia.jueces.all():
+                group = f'juez_{juez.id}'
+                async_to_sync(channel_layer.group_send)(
+                    group,
+                    {
+                        'type': 'competencia.detenida',
+                        'data': {
+                            'mensaje': 'La competencia ha finalizado. No se pueden registrar más tiempos.',
+                            'competencia_id': competencia.id,
+                            'competencia_nombre': competencia.nombre,
+                            'en_curso': False,
+                        }
+                    }
+                )
         else:
             messages.warning(request, f'La competencia "{competencia.nombre}" no está en curso.')
         return redirect('admin:app_competencia_changelist')
 
+class JuezForm(forms.ModelForm):
+    """Formulario personalizado para crear/editar jueces"""
+    password1 = forms.CharField(label='Contraseña', widget=forms.PasswordInput, required=False)
+    password2 = forms.CharField(label='Confirmar contraseña', widget=forms.PasswordInput, required=False)
+    
+    class Meta:
+        model = Juez
+        fields = ['username', 'first_name', 'last_name', 'email', 'telefono', 'competencia', 'activo']
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        password1 = cleaned_data.get('password1')
+        password2 = cleaned_data.get('password2')
+        
+        # Si es un nuevo juez, la contraseña es requerida
+        if not self.instance.pk and not password1:
+            raise forms.ValidationError('La contraseña es requerida para nuevos jueces.')
+        
+        # Si se proporciona contraseña, deben coincidir
+        if password1 or password2:
+            if password1 != password2:
+                raise forms.ValidationError('Las contraseñas no coinciden.')
+        
+        return cleaned_data
+    
+    def save(self, commit=True):
+        juez = super().save(commit=False)
+        password = self.cleaned_data.get('password1')
+        
+        if password:
+            juez.set_password(password)
+        
+        if commit:
+            juez.save()
+        return juez
+
 @admin.register(Juez)
 class JuezAdmin(admin.ModelAdmin):
-    list_display = ['nombre', 'user', 'competencia', 'activo']
-    list_filter = ['competencia', 'activo']
-    search_fields = ['nombre', 'user__username', 'user__email']
+    """
+    Admin para el modelo Juez.
+    Los jueces NO son usuarios de Django, tienen su propio modelo.
+    """
+    form = JuezForm
+    list_display = ['username', 'get_full_name', 'email', 'competencia', 'activo', 'fecha_creacion']
+    list_filter = ['competencia', 'activo', 'fecha_creacion']
+    search_fields = ['username', 'first_name', 'last_name', 'email']
+    ordering = ['-fecha_creacion']
+    readonly_fields = ['fecha_creacion', 'last_login']
+    
+    fieldsets = (
+        ('Credenciales de Acceso', {
+            'fields': ('username', 'password1', 'password2')
+        }),
+        ('Información Personal', {
+            'fields': ('first_name', 'last_name', 'email', 'telefono')
+        }),
+        ('Información del Juez', {
+            'fields': ('competencia', 'activo'),
+        }),
+        ('Información del Sistema', {
+            'fields': ('fecha_creacion', 'last_login'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def get_full_name(self, obj):
+        return obj.get_full_name() or obj.username
+    get_full_name.short_description = 'Nombre Completo'
 
 @admin.register(Equipo)
 class EquipoAdmin(admin.ModelAdmin):

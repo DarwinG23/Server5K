@@ -6,6 +6,29 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "django>=5.2.8",
-    "django-cors-headers>=4.9.0",
     "djangorestframework>=3.16.1",
+    "django-cors-headers>=4.9.0",
+    "channels>=4.0.0",
+    "channels-redis>=4.0.0",
+    "djangorestframework-simplejwt>=2.8.0",
+    "daphne>=4.0.0",
+    "websockets>=11.0.3",
+    "whitenoise>=6.11.0",
+    "drf-spectacular>=0.29.0",
+    "django-filter>=24.3",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "pytest-django",
+    "coverage",
+]
+
+[project.scripts]
+serve = "daphne:main"
+
+[tool.daphne]
+bind = "127.0.0.1"
+port = 8000
+application = "server.asgi:application"
