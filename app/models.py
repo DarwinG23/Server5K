@@ -249,3 +249,10 @@ class RegistroTiempo(models.Model):
             self.milisegundos = ms
 
         return super().save(*args, **kwargs)
+    
+class ResultadoEquipo(Equipo):
+    """Modelo proxy para mostrar resultados de equipos"""
+    class Meta:
+        proxy = True
+        verbose_name = 'Resultado por Equipo'
+        verbose_name_plural = '📊 Resultados por Equipo'
