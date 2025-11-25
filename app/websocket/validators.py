@@ -46,7 +46,7 @@ def verificar_competencia_activa(juez):
     Returns:
         bool: True si la competencia está activa, False en caso contrario
     """
-    return hasattr(juez, 'team') and juez.team and juez.team.competition and juez.team.competition.is_active
+    return juez.teams.filter(competition__is_active=True).exists()
 
 
 @database_sync_to_async
@@ -60,7 +60,7 @@ def verificar_competencia_en_curso(juez):
     Returns:
         bool: True si la competencia está en curso, False en caso contrario
     """
-    return hasattr(juez, 'team') and juez.team and juez.team.competition and juez.team.competition.is_running
+    return juez.teams.filter(competition__is_running=True).exists()
 
 
 @database_sync_to_async
@@ -74,10 +74,11 @@ def obtener_estado_competencia(juez):
     Returns:
         dict: Diccionario con información de la competencia o None si no existe
     """
-    if not hasattr(juez, 'team') or not juez.team or not juez.team.competition:
+    equipo = juez.teams.select_related('competition').filter(competition__is_active=True).first()
+    if not equipo or not equipo.competition:
         return None
     
-    competencia = juez.team.competition
+    competencia = equipo.competition
     
     return {
         'id': competencia.id,

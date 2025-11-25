@@ -11,12 +11,12 @@ class Equipo(models.Model):
         verbose_name='Competencia',
     )
 
-    judge = models.OneToOneField(
+    judge = models.ForeignKey(
         'Juez',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name='team',
+        related_name='teams',
         verbose_name='Juez asignado',
     )
 

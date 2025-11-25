@@ -110,12 +110,15 @@ class EquipoAdmin(admin.ModelAdmin):
 
 @admin.register(Juez)
 class JuezAdmin(admin.ModelAdmin):
-    list_display = ['username', 'get_full_name', 'email', 'equipo_asignado', 'is_active']
+    list_display = ['username', 'get_full_name', 'email', 'equipos_asignados', 'is_active']
     search_fields = ['username', 'first_name', 'last_name', 'email']
 
-    def equipo_asignado(self, obj):
-        return getattr(obj, 'team', None) or '-'
-    equipo_asignado.short_description = 'Equipo'
+    def equipos_asignados(self, obj):
+        equipos = obj.teams.all()
+        if equipos:
+            return ', '.join([str(e.number) for e in equipos])
+        return '-'
+    equipos_asignados.short_description = 'Equipos'
 
 
 @admin.register(RegistroTiempo)

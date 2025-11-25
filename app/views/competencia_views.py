@@ -71,8 +71,10 @@ class CompetenciaViewSet(viewsets.ReadOnlyModelViewSet):
         
         # Filtrar por la competencia del equipo del juez autenticado
         juez = self.request.user
-        if hasattr(juez, 'team') and juez.team:
-            queryset = queryset.filter(id=juez.team.competition_id)
+        # Si es un juez autenticado, filtrar por las competencias de sus equipos
+        if hasattr(juez, 'teams'):
+            competition_ids = juez.teams.values_list('competition_id', flat=True)
+            queryset = queryset.filter(id__in=competition_ids)
         else:
             # Si el juez no tiene equipo asignado, no mostrar ninguna competencia
             queryset = queryset.none()

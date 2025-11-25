@@ -75,8 +75,10 @@ class JuezConsumer(AsyncJsonWebsocketConsumer):
         
         # Obtener competencia_id del equipo asignado al juez
         competencia_id = None
-        if hasattr(self.juez, 'team') and self.juez.team:
-            competencia_id = self.juez.team.competition_id
+        # Obtener competencia_id del primer equipo del juez
+        equipo = self.juez.teams.select_related('competition').first()
+        if equipo:
+            competencia_id = equipo.competition_id
         
         if competencia_id:
             self.competencia_group = f'competencia_{competencia_id}'
