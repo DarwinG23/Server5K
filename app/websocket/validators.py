@@ -1,0 +1,156 @@
+"""
+Módulo: validators
+Funciones de validación para conexiones WebSocket y mensajes entrantes.
+"""
+
+from channels.db import database_sync_to_async
+from rest_framework_simplejwt.tokens import AccessToken
+
+
+@database_sync_to_async
+def get_juez_from_token(token):
+    """
+    Valida el token JWT y retorna el juez.
+    
+    Args:
+        token: Token JWT de acceso
+        
+    Returns:
+        Juez instance si es válido, None en caso contrario
+    """
+    from app.models import Juez
+    
+    try:
+        # Validar el token
+        access_token = AccessToken(token)
+        juez_id = access_token.get('juez_id')
+        
+        if not juez_id:
+            return None
+        
+        # Obtener el juez con su competencia (select_related para optimizar)
+        juez = Juez.objects.select_related('competencia').get(id=juez_id, activo=True)
+        return juez
+    except Exception:
+        return None
+
+
+@database_sync_to_async
+def verificar_competencia_activa(juez):
+    """
+    Verifica que el juez tenga una competencia activa.
+    
+    Args:
+        juez: Instancia del modelo Juez
+        
+    Returns:
+        bool: True si la competencia está activa, False en caso contrario
+    """
+    return juez.competencia and juez.competencia.activa
+
+
+@database_sync_to_async
+def verificar_competencia_en_curso(juez):
+    """
+    Verifica que la competencia del juez esté en curso.
+    
+    Args:
+        juez: Instancia del modelo Juez
+        
+    Returns:
+        bool: True si la competencia está en curso, False en caso contrario
+    """
+    return juez.competencia and juez.competencia.en_curso
+
+
+@database_sync_to_async
+def obtener_estado_competencia(juez):
+    """
+    Obtiene el estado de la competencia del juez.
+    
+    Args:
+        juez: Instancia del modelo Juez
+        
+    Returns:
+        dict: Diccionario con información de la competencia o None si no existe
+    """
+    if not juez.competencia:
+        return None
+    
+    return {
+        'id': juez.competencia.id,
+        'nombre': juez.competencia.nombre,
+        'en_curso': juez.competencia.en_curso,
+        'activa': juez.competencia.activa,
+    }
+
+
+@database_sync_to_async
+def validar_equipo_pertenece_juez(equipo_id, juez_id):
+    """
+    Valida que un equipo pertenezca al juez especificado.
+    
+    Args:
+        equipo_id: ID del equipo
+        juez_id: ID del juez
+        
+    Returns:
+        bool: True si el equipo pertenece al juez, False en caso contrario
+    """
+    from app.models import Equipo
+    
+    try:
+        equipo = Equipo.objects.get(id=equipo_id)
+        return equipo.juez_asignado_id == juez_id
+    except Equipo.DoesNotExist:
+        return False
+
+
+def validar_datos_registro(content):
+    """
+    Valida que los datos de un registro de tiempo sean correctos.
+    
+    Args:
+        content: Diccionario con los datos del registro
+        
+    Returns:
+        tuple: (bool_valido, mensaje_error)
+    """
+    equipo_id = content.get('equipo_id')
+    tiempo = content.get('tiempo')
+    
+    if equipo_id is None:
+        return False, 'Falta el campo equipo_id'
+    
+    if tiempo is None:
+        return False, 'Falta el campo tiempo'
+    
+    if not isinstance(tiempo, (int, float)) or tiempo < 0:
+        return False, 'El tiempo debe ser un número positivo'
+    
+    return True, None
+
+
+def validar_datos_batch(content):
+    """
+    Valida que los datos de un batch de registros sean correctos.
+    
+    Args:
+        content: Diccionario con los datos del batch
+        
+    Returns:
+        tuple: (bool_valido, mensaje_error)
+    """
+    equipo_id = content.get('equipo_id')
+    registros = content.get('registros', [])
+    
+    if equipo_id is None:
+        return False, 'Falta el campo equipo_id'
+    
+    if not registros or not isinstance(registros, list):
+        return False, 'Faltan los registros o no es una lista válida'
+    
+    if len(registros) > 15:
+        return False, 'El batch no puede contener más de 15 registros'
+    
+    return True, None

@@ -25,9 +25,14 @@ SECRET_KEY = 'django-insecure-oos-2*p-=a6m$$jbs@_(7@9h!_r=tb5rj1v%n$ak#t94@_c-t^
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-# ALLOWED_HOSTS = []
-# ALLOWED_HOSTS = ['*']
-ALLOWED_HOSTS = ['192.168.0.106', 'localhost']
+# ALLOWED_HOSTS para red LAN - Permite conexiones desde dispositivos en la red
+ALLOWED_HOSTS = [
+    '192.168.0.108',   # IP actual de la PC servidor
+    '192.168.0.*',     # Permite cualquier dispositivo en la red 192.168.0.x
+    'localhost',
+    '127.0.0.1',
+    '10.20.142.229',  # IP alternativa de la PC servidor
+]
 
 
 # Application definition
@@ -47,7 +52,6 @@ INSTALLED_APPS = [
     'channels',
     'drf_spectacular',
     'app',
-    'mensajeria',
 ]
 
 MIDDLEWARE = [
@@ -84,10 +88,21 @@ WSGI_APPLICATION = 'server.wsgi.application'
 # ASGI / Channels
 ASGI_APPLICATION = 'server.asgi.application'
 
-# Channel layers: in-memory for development. Use Redis in production.
+# Channel layers: Usando Redis para pruebas LAN con múltiples dispositivos
+# Redis corriendo en Docker: redis-dev (puerto 6379)
 CHANNEL_LAYERS = {
     'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        # ✅ Redis activado para soportar múltiples dispositivos simultáneos
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [('127.0.0.1', 6379)],  # Redis en Docker (redis-dev)
+            'capacity': 2000,      # Capacidad para ~20 dispositivos × 100 mensajes
+            'expiry': 60,          # Los mensajes expiran después de 60 segundos
+            'prefix': 'server5k',  # Prefijo para keys de Redis
+        },
+        
+        # 🟡 DESARROLLO con 1 solo worker (comentado para pruebas LAN)
+        # 'BACKEND': 'channels.layers.InMemoryChannelLayer',
     }
 }
 
@@ -158,7 +173,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Django REST Framework + SimpleJWT
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'app.authentication.JuezJWTAuthentication',
+        'app.auth.authentication.JuezJWTAuthentication',
     ),
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',  # ← Para documentación
 }
@@ -226,6 +241,56 @@ SIMPLE_JWT = {
     'JTI_CLAIM': 'jti',
 }
 
-# CORS Configuration
-CORS_ALLOW_ALL_ORIGINS = True
+# CORS Configuration - Permitir peticiones desde apps móviles en red LAN
+CORS_ALLOW_ALL_ORIGINS = True  # Para pruebas en LAN con múltiples dispositivos
+CORS_ALLOW_CREDENTIALS = True  # Permitir cookies y credenciales
+
+# Para producción, usar lista específica en lugar de CORS_ALLOW_ALL_ORIGINS:
+# CORS_ALLOWED_ORIGINS = [
+#     'http://192.168.0.108:8000',
+#     'http://192.168.0.108:3000',
+# ]
+
+# Logging Configuration - Para debugging detallado
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '[{levelname}] {asctime} {name} - {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '[{levelname}] {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'app.websocket.consumers': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'app.services': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'django.channels': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+}
 
