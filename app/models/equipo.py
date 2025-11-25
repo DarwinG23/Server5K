@@ -1,51 +1,53 @@
-"""
-Módulo: equipo
-Define el modelo de Equipo para gestionar participantes en las competencias.
-"""
-
 from django.db import models
 
-
 class Equipo(models.Model):
-    nombre = models.CharField(max_length=200)
-    dorsal = models.IntegerField()
-    
-    juez_asignado = models.ForeignKey(
-        'Juez',
+    name = models.CharField(max_length=200, verbose_name="Nombre")
+    number = models.PositiveIntegerField(verbose_name="Dorsal")
+
+    competition = models.ForeignKey(
+        'Competencia',
         on_delete=models.CASCADE,
-        related_name='equipos_asignados'
+        related_name='teams',
+        verbose_name='Competencia',
     )
-    
-    @property
-    def competencia(self):
-        return self.juez_asignado.competencia
-    
+
+    judge = models.OneToOneField(
+        'Juez',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='team',
+        verbose_name='Juez asignado',
+    )
+
     class Meta:
-        unique_together = ('juez_asignado', 'dorsal')
-        ordering = ['dorsal']
-    
+        unique_together = ('competition', 'number')
+        ordering = ['number']
+        verbose_name = "Equipo"
+        verbose_name_plural = "Equipos"
+
     def __str__(self):
-        return f"{self.nombre} (Dorsal {self.dorsal})"
-    
-    def tiempo_total(self):
-        """Retorna el tiempo total acumulado de todos los registros en milisegundos"""
+        return f"{self.name} (Dorsal {self.number})"
+
+    def total_time(self):
+        """Retorna el tiempo total en milisegundos"""
         from django.db.models import Sum
-        total = self.tiempos.aggregate(total=Sum('tiempo'))['total']
+        total = self.times.aggregate(total=Sum('time'))['total']
         return total or 0
 
-    def tiempo_promedio(self):
-        """Retorna el tiempo promedio de todos los registros en milisegundos"""
+    def average_time(self):
+        """Retorna el tiempo promedio en milisegundos"""
         from django.db.models import Avg
-        promedio = self.tiempos.aggregate(promedio=Avg('tiempo'))['promedio']
+        promedio = self.times.aggregate(promedio=Avg('time'))['promedio']
         return int(promedio) if promedio else 0
 
-    def mejor_tiempo(self):
-        """Retorna el mejor tiempo (más bajo) del equipo"""
-        return self.tiempos.order_by('tiempo').first()
+    def best_time(self):
+        """Retorna el mejor registro de tiempo"""
+        return self.times.order_by('time').first()
 
-    def tiempo_total_formateado(self):
-        """Retorna el tiempo total en formato legible"""
-        total_ms = self.tiempo_total()
+    def formatted_total_time(self):
+        """Retorna el tiempo total formateado"""
+        total_ms = self.total_time()
         ms = total_ms % 1000
         total_seconds = total_ms // 1000
         s = total_seconds % 60
@@ -54,13 +56,12 @@ class Equipo(models.Model):
         h = total_minutes // 60
         return f"{h}h {m}m {s}s {ms}ms"
 
-    def numero_registros(self):
-        """Retorna el número total de registros de tiempo"""
-        return self.tiempos.count()
+    def records_count(self):
+        """Retorna el número de registros"""
+        return self.times.count()
 
 
 class ResultadoEquipo(Equipo):
-    """Modelo proxy para mostrar resultados de equipos en el admin"""
     class Meta:
         proxy = True
         verbose_name = 'Resultado por Equipo'

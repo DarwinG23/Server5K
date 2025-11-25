@@ -87,11 +87,6 @@ class LoginView(APIView):
                 status=status.HTTP_401_UNAUTHORIZED
             )
 
-        # Actualizar last_login
-        from django.utils import timezone
-        juez.last_login = timezone.now()
-        juez.save(update_fields=['last_login'])
-
         # Generar tokens JWT
         refresh = RefreshToken()
         refresh['juez_id'] = juez.id

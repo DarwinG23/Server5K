@@ -37,21 +37,21 @@ class CompetenciaService:
         try:
             competencia = Competencia.objects.get(id=competencia_id)
             
-            if competencia.en_curso:
+            if competencia.is_running:
                 return {
                     'exito': False,
                     'error': 'La competencia ya está en curso'
                 }
             
-            if not competencia.activa:
+            if not competencia.is_active:
                 return {
                     'exito': False,
                     'error': 'La competencia no está activa'
                 }
             
             # Iniciar competencia
-            competencia.en_curso = True
-            competencia.fecha_inicio = timezone.now()
+            competencia.is_running = True
+            competencia.started_at = timezone.now()
             competencia.save()
             
             # Notificar a todos los jueces de esta competencia
@@ -59,7 +59,7 @@ class CompetenciaService:
                 competencia_id=competencia.id,
                 tipo='competencia_iniciada',
                 mensaje='La competencia ha iniciado',
-                competencia_nombre=competencia.nombre,
+                competencia_nombre=competencia.name,
                 en_curso=True
             )
             
@@ -94,15 +94,15 @@ class CompetenciaService:
         try:
             competencia = Competencia.objects.get(id=competencia_id)
             
-            if not competencia.en_curso:
+            if not competencia.is_running:
                 return {
                     'exito': False,
                     'error': 'La competencia no está en curso'
                 }
             
             # Detener competencia
-            competencia.en_curso = False
-            competencia.fecha_fin = timezone.now()
+            competencia.is_running = False
+            competencia.finished_at = timezone.now()
             competencia.save()
             
             # Notificar a todos los jueces de esta competencia
@@ -110,7 +110,7 @@ class CompetenciaService:
                 competencia_id=competencia.id,
                 tipo='competencia_detenida',
                 mensaje='La competencia ha finalizado',
-                competencia_nombre=competencia.nombre,
+                competencia_nombre=competencia.name,
                 en_curso=False
             )
             
@@ -185,14 +185,13 @@ class CompetenciaService:
                 'exito': True,
                 'competencia': {
                     'id': competencia.id,
-                    'nombre': competencia.nombre,
-                    'categoria': competencia.categoria,
-                    'activa': competencia.activa,
-                    'en_curso': competencia.en_curso,
-                    'fecha_inicio': competencia.fecha_inicio.isoformat() if competencia.fecha_inicio else None,
-                    'fecha_fin': competencia.fecha_fin.isoformat() if competencia.fecha_fin else None,
-                    'estado': competencia.get_estado_display(),
-                    'estado_texto': competencia.get_estado_texto(),
+                    'name': competencia.name,
+                    'category': competencia.category,
+                    'is_active': competencia.is_active,
+                    'is_running': competencia.is_running,
+                    'started_at': competencia.started_at.isoformat() if competencia.started_at else None,
+                    'finished_at': competencia.finished_at.isoformat() if competencia.finished_at else None,
+                    'status': competencia.get_status_display(),
                 }
             }
             

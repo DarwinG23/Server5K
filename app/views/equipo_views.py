@@ -22,9 +22,9 @@ class EquipoViewSet(viewsets.ReadOnlyModelViewSet):
     - ?juez_id={id} - Filtra equipos por juez asignado
     """
     queryset = Equipo.objects.select_related(
-        'juez_asignado',
-        'juez_asignado__competencia'
-    ).all().order_by('dorsal')
+        'judge',
+        'competition'
+    ).all().order_by('number')
     serializer_class = EquipoSerializer
     permission_classes = [IsAuthenticated]
     
@@ -67,23 +67,23 @@ class EquipoViewSet(viewsets.ReadOnlyModelViewSet):
     
     def get_queryset(self):
         """
-        Permite filtrar equipos por competencia_id y juez_id.
+        Permite filtrar equipos por competition_id y judge_id.
         Solo retorna los equipos asignados al juez autenticado.
         """
         queryset = super().get_queryset()
         
         # Filtrar por equipos asignados al juez autenticado
         juez = self.request.user
-        queryset = queryset.filter(juez_asignado_id=juez.id)
+        queryset = queryset.filter(judge_id=juez.id)
         
         # Filtro por competencia (opcional, ya está filtrado por juez)
-        competencia_id = self.request.query_params.get('competencia_id')
-        if competencia_id:
-            queryset = queryset.filter(juez_asignado__competencia_id=competencia_id)
+        competition_id = self.request.query_params.get('competition_id')
+        if competition_id:
+            queryset = queryset.filter(competition_id=competition_id)
         
         # Filtro por juez (opcional, redundante pero se mantiene para compatibilidad)
-        juez_id = self.request.query_params.get('juez_id')
-        if juez_id:
-            queryset = queryset.filter(juez_asignado_id=juez_id)
+        judge_id = self.request.query_params.get('judge_id')
+        if judge_id:
+            queryset = queryset.filter(judge_id=judge_id)
         
         return queryset

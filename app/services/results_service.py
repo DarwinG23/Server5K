@@ -26,7 +26,7 @@ class ResultsService:
         
         Args:
             equipo_id: ID del equipo
-            competencia_id: ID de la competencia (opcional, si no se especifica usa todos los registros)
+            competencia_id: ID de la competencia (opcional, se ignora ya que equipo pertenece a una competencia)
             
         Returns:
             Dict con estadísticas del equipo
@@ -36,21 +36,17 @@ class ResultsService:
         try:
             equipo = Equipo.objects.get(id=equipo_id)
             
-            # Filtrar registros
-            registros_query = RegistroTiempo.objects.filter(equipo=equipo)
-            
-            if competencia_id:
-                registros_query = registros_query.filter(competencia_id=competencia_id)
-            
-            # Obtener los mejores tiempos (ordenados ascendentemente)
-            registros = registros_query.order_by('tiempo')[:self.MAX_REGISTROS_CONSIDERADOS]
+            # Filtrar registros del equipo (equipo ya pertenece a una competencia)
+            registros = RegistroTiempo.objects.filter(
+                equipo=equipo
+            ).order_by('tiempo')[:self.MAX_REGISTROS_CONSIDERADOS]
             
             if not registros:
                 return {
                     'exito': True,
                     'equipo_id': equipo_id,
-                    'equipo_nombre': equipo.nombre,
-                    'equipo_dorsal': equipo.dorsal,
+                    'equipo_nombre': equipo.name,
+                    'equipo_dorsal': equipo.number,
                     'num_registros': 0,
                     'tiempo_total': 0,
                     'tiempo_promedio': 0,
@@ -59,7 +55,7 @@ class ResultsService:
                 }
             
             # Calcular estadísticas
-            tiempos = [r.tiempo for r in registros]
+            tiempos = [r.time for r in registros]
             tiempo_total = sum(tiempos)
             tiempo_promedio = tiempo_total // len(tiempos) if tiempos else 0
             mejor_tiempo = min(tiempos) if tiempos else None
@@ -67,8 +63,8 @@ class ResultsService:
             return {
                 'exito': True,
                 'equipo_id': equipo_id,
-                'equipo_nombre': equipo.nombre,
-                'equipo_dorsal': equipo.dorsal,
+                'equipo_nombre': equipo.name,
+                'equipo_dorsal': equipo.number,
                 'num_registros': len(registros),
                 'tiempo_total': tiempo_total,
                 'tiempo_promedio': tiempo_promedio,
@@ -78,13 +74,13 @@ class ResultsService:
                 'mejor_tiempo_formateado': self._formatear_tiempo(mejor_tiempo) if mejor_tiempo else None,
                 'registros': [
                     {
-                        'id_registro': str(r.id_registro),
-                        'tiempo': r.tiempo,
-                        'horas': r.horas,
-                        'minutos': r.minutos,
-                        'segundos': r.segundos,
-                        'milisegundos': r.milisegundos,
-                        'timestamp': r.timestamp.isoformat()
+                        'id_registro': str(r.record_id),
+                        'tiempo': r.time,
+                        'horas': r.hours,
+                        'minutos': r.minutes,
+                        'segundos': r.seconds,
+                        'milisegundos': r.milliseconds,
+                        'timestamp': r.created_at.isoformat()
                     }
                     for r in registros
                 ]
@@ -106,18 +102,13 @@ class ResultsService:
         Returns:
             Dict con lista de equipos ordenados por mejor tiempo
         """
-        from app.models import Equipo, RegistroTiempo, Competencia
+        from app.models import Equipo, Competencia
         
         try:
             competencia = Competencia.objects.get(id=competencia_id)
             
-            # Obtener IDs de equipos que tienen registros en esta competencia
-            equipos_ids = RegistroTiempo.objects.filter(
-                competencia_id=competencia_id
-            ).values_list('equipo_id', flat=True).distinct()
-            
-            # Obtener equipos
-            equipos = Equipo.objects.filter(id__in=equipos_ids)
+            # Obtener equipos de esta competencia
+            equipos = Equipo.objects.filter(competencia_id=competencia_id)
             
             # Calcular resultados para cada equipo
             resultados = []
@@ -136,9 +127,9 @@ class ResultsService:
             return {
                 'exito': True,
                 'competencia_id': competencia_id,
-                'competencia_nombre': competencia.nombre,
+                'competencia_nombre': competencia.name,
                 'total_equipos': len(resultados),
-                'ranking': resultados
+                'ranking': resultados_ordenados
             }
             
         except Competencia.DoesNotExist:

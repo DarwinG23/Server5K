@@ -1,89 +1,85 @@
-"""
-Módulo: registrotiempo
-Define los modelos para gestionar registros de tiempo de los equipos.
-"""
-
 from django.db import models
 from django.utils import timezone
 from django.core.validators import MinValueValidator, MaxValueValidator
 import uuid
 
-
 class RegistroTiempo(models.Model):
-    id_registro = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
-    
-    equipo = models.ForeignKey(
-        'Equipo', 
-        on_delete=models.CASCADE, 
-        related_name='tiempos'
+    record_id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+        verbose_name="ID de registro"
     )
-    
-    # Relación directa con competencia para evitar datos inconsistentes
-    competencia = models.ForeignKey(
-        'Competencia',
+
+    team = models.ForeignKey(
+        'Equipo',
         on_delete=models.CASCADE,
-        related_name='registros_tiempo',
-        verbose_name="Competencia"
+        related_name='times',
+        verbose_name='Equipo',
     )
-    
-    # Keep a single integer field for total milliseconds (used for ordering/search)
-    tiempo = models.BigIntegerField(help_text="Tiempo en milisegundos")
 
-    # New, more granular fields
-    horas = models.PositiveIntegerField(default=0, validators=[MinValueValidator(0)])
-    minutos = models.PositiveSmallIntegerField(default=0, validators=[MinValueValidator(0), MaxValueValidator(59)])
-    segundos = models.PositiveSmallIntegerField(default=0, validators=[MinValueValidator(0), MaxValueValidator(59)])
-    milisegundos = models.PositiveSmallIntegerField(default=0, validators=[MinValueValidator(0), MaxValueValidator(999)])
+    time = models.BigIntegerField(help_text="Tiempo en milisegundos", verbose_name="Tiempo")
 
-    timestamp = models.DateTimeField(default=timezone.now)
-    
-    @property
-    def juez(self):
-        return self.equipo.juez_asignado
-    
+    hours = models.PositiveIntegerField(default=0, validators=[MinValueValidator(0)], verbose_name="Horas")
+    minutes = models.PositiveSmallIntegerField(
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(59)],
+        verbose_name="Minutos"
+    )
+    seconds = models.PositiveSmallIntegerField(
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(59)],
+        verbose_name="Segundos"
+    )
+    milliseconds = models.PositiveSmallIntegerField(
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(999)],
+        verbose_name="Milisegundos"
+    )
+
+    created_at = models.DateTimeField(default=timezone.now, verbose_name="Fecha de creación")
+
     class Meta:
-        ordering = ['tiempo']
+        ordering = ['time']
         indexes = [
-            models.Index(fields=['equipo', 'tiempo']),
+            models.Index(fields=['team', 'time']),
         ]
-        
+        verbose_name = "Registro de Tiempo"
+        verbose_name_plural = "Registros de Tiempo"
+
     def __str__(self):
-        return f"Registro {self.id_registro} - Equipo: {self.equipo.nombre} - Tiempo: {self.tiempo} ms"
+        return f"Registro {self.record_id} - Equipo: {self.team.name} - {self.time} ms"
+
+    @property
+    def competition(self):
+        """Retorna la competencia del equipo"""
+        return self.team.competition
+
+    @property
+    def judge(self):
+        """Retorna el juez asignado al equipo"""
+        return getattr(self.team, 'judge', None)
 
     def save(self, *args, **kwargs):
-        """
-        Keep `tiempo` (total milliseconds) consistent with the granular fields.
-
-        - If any of the granular fields are non-zero, compute `tiempo` from them.
-        - Otherwise, if all granular fields are zero and `tiempo` is present, derive the granular
-          fields from `tiempo` so existing records are preserved.
-        - Auto-assign competencia from equipo if not provided.
-        """
-        # Auto-asignar competencia desde el equipo si no está presente
-        if not self.competencia_id:
-            self.competencia = self.equipo.competencia
-        
-        try:
-            any_component = any([self.horas, self.minutos, self.segundos, self.milisegundos])
-        except Exception:
-            # In migrations or when fields aren't available yet, defer to default save
-            return super().save(*args, **kwargs)
-
+        """Calcula tiempo total desde componentes o viceversa"""
+        any_component = any([self.hours, self.minutes, self.seconds, self.milliseconds])
         if any_component:
-            total_ms = ((int(self.horas) * 3600 + int(self.minutos) * 60 + int(self.segundos)) * 1000) + int(self.milisegundos)
-            self.tiempo = int(total_ms)
+            total_ms = (
+                (int(self.hours) * 3600 + int(self.minutes) * 60 + int(self.seconds)) * 1000
+                + int(self.milliseconds)
+            )
+            self.time = int(total_ms)
         else:
-            # derive components from existing tiempo
-            total = int(self.tiempo or 0)
+            total = int(self.time or 0)
             ms = total % 1000
             total_seconds = total // 1000
             s = total_seconds % 60
             total_minutes = total_seconds // 60
             m = total_minutes % 60
             h = total_minutes // 60
-            self.horas = h
-            self.minutos = m
-            self.segundos = s
-            self.milisegundos = ms
+            self.hours = h
+            self.minutes = m
+            self.seconds = s
+            self.milliseconds = ms
 
         return super().save(*args, **kwargs)

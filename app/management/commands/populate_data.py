@@ -28,13 +28,13 @@ class Command(BaseCommand):
         # Crear una competencia
         self.stdout.write('Creando competencia...')
         competencia = Competencia.objects.create(
-            nombre=f"5K {fake.city()} {timezone.now().year}",
-            fecha_hora=fake.date_time_between(start_date='now', end_date='+30d', tzinfo=timezone.get_current_timezone()),
-            categoria=random.choice(['estudiantes', 'interfacultades']),
-            activa=True,
-            en_curso=False
+            name=f"5K {fake.city()} {timezone.now().year}",
+            datetime=fake.date_time_between(start_date='now', end_date='+30d', tzinfo=timezone.get_current_timezone()),
+            category=random.choice(['estudiantes', 'interfacultades']),
+            is_active=True,
+            is_running=False
         )
-        self.stdout.write(self.style.SUCCESS(f'✓ Competencia creada: {competencia.nombre}'))
+        self.stdout.write(self.style.SUCCESS(f'✓ Competencia creada: {competencia.name}'))
         
         # Crear 16 jueces
         self.stdout.write('\nCreando 16 jueces...')
@@ -51,9 +51,7 @@ class Command(BaseCommand):
                 first_name=first_name,
                 last_name=last_name,
                 email=fake.email(),
-                telefono=fake.phone_number()[:20],
-                competencia=competencia,
-                activo=True
+                is_active=True
             )
             
             # Establecer contraseña
@@ -89,22 +87,23 @@ class Command(BaseCommand):
             dorsal = i * 10  # Dorsales: 10, 20, 30, etc.
             
             equipo = Equipo.objects.create(
-                nombre=nombre_equipo,
-                dorsal=dorsal,
-                juez_asignado=juez
+                name=nombre_equipo,
+                number=dorsal,
+                competition=competencia,
+                judge=juez
             )
             
-            self.stdout.write(self.style.SUCCESS(f'  ✓ Equipo {i}/16: {equipo.nombre} (Dorsal {dorsal}) - Juez: {juez.get_full_name()}'))
+            self.stdout.write(self.style.SUCCESS(f'  ✓ Equipo {i}/16: {equipo.name} (Dorsal {dorsal}) - Juez: {juez.get_full_name()}'))
         
         # Resumen
         self.stdout.write(self.style.SUCCESS('\n' + '='*60))
         self.stdout.write(self.style.SUCCESS('RESUMEN DE DATOS GENERADOS'))
         self.stdout.write(self.style.SUCCESS('='*60))
-        self.stdout.write(f'Competencia: {competencia.nombre}')
-        self.stdout.write(f'Categoría: {competencia.get_categoria_display()}')
-        self.stdout.write(f'Fecha: {competencia.fecha_hora.strftime("%d/%m/%Y %H:%M")}')
-        self.stdout.write(f'Total de Jueces: {Juez.objects.filter(competencia=competencia).count()}')
-        self.stdout.write(f'Total de Equipos: {Equipo.objects.filter(juez_asignado__competencia=competencia).count()}')
+        self.stdout.write(f'Competencia: {competencia.name}')
+        self.stdout.write(f'Categoría: {competencia.get_category_display()}')
+        self.stdout.write(f'Fecha: {competencia.datetime.strftime("%d/%m/%Y %H:%M")}')
+        self.stdout.write(f'Total de Jueces: {Juez.objects.count()}')
+        self.stdout.write(f'Total de Equipos: {Equipo.objects.filter(competition=competencia).count()}')
         self.stdout.write(self.style.SUCCESS('='*60))
         
         # Generar archivo con credenciales
@@ -115,7 +114,7 @@ class Command(BaseCommand):
             f.write('='*70 + '\n')
             f.write('CREDENCIALES DE ACCESO - SISTEMA 5K\n')
             f.write(f'Generado: {timezone.now().strftime("%d/%m/%Y %H:%M:%S")}\n')
-            f.write(f'Competencia: {competencia.nombre}\n')
+            f.write(f'Competencia: {competencia.name}\n')
             f.write('='*70 + '\n\n')
             
             for cred in credenciales:

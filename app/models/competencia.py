@@ -1,8 +1,3 @@
-"""
-Módulo: competencia
-Define el modelo de Competencia para gestionar eventos deportivos.
-"""
-
 from django.db import models
 from django.utils import timezone
 
@@ -11,59 +6,58 @@ CATEGORIA_CHOICES = [
     ('interfacultades', 'Interfacultades por Equipos'),
 ]
 
-
 class Competencia(models.Model):
-    nombre = models.CharField(max_length=200)
-    fecha_hora = models.DateTimeField()
-    categoria = models.CharField(
+    name = models.CharField(max_length=200, verbose_name="Nombre")
+    datetime = models.DateTimeField(verbose_name="Fecha y hora")
+    category = models.CharField(
         max_length=20,
-        choices=CATEGORIA_CHOICES
+        choices=CATEGORIA_CHOICES,
+        verbose_name="Categoría",
     )
-    activa = models.BooleanField(default=True)
-    en_curso = models.BooleanField(default=False, verbose_name="En curso")
-    fecha_inicio = models.DateTimeField(null=True, blank=True, verbose_name="Fecha de inicio")
-    fecha_fin = models.DateTimeField(null=True, blank=True, verbose_name="Fecha de finalización")
-    
-    def iniciar_competencia(self):
-        """Inicia la competencia"""
-        if not self.en_curso:
-            self.en_curso = True
-            self.fecha_inicio = timezone.now()
-            self.save()
-            return True
-        return False
-    
-    def detener_competencia(self):
-        """Detiene la competencia"""
-        if self.en_curso:
-            self.en_curso = False
-            self.fecha_fin = timezone.now()
-            self.save()
-            return True
-        return False
-    
-    def __str__(self):
-        return self.nombre
-    
+
+    is_active = models.BooleanField(default=True, verbose_name="Activa")
+    is_running = models.BooleanField(default=False, verbose_name="En curso")
+    started_at = models.DateTimeField(null=True, blank=True, verbose_name="Fecha de inicio")
+    finished_at = models.DateTimeField(null=True, blank=True, verbose_name="Fecha de finalización")
+
     class Meta:
         verbose_name = "Competencia"
         verbose_name_plural = "Competencias"
-        
-    def get_estado_display(self):
-        """Retorna el estado actual de la competencia"""
-        if self.en_curso:
-            return 'en_curso'
-        elif self.fecha_fin:
-            return 'finalizada'
-        else:
-            return 'programada'
-    
-    def get_estado_texto(self):
-        """Retorna el texto del estado para mostrar"""
-        estado = self.get_estado_display()
+
+    def __str__(self):
+        return self.name
+
+    def start(self):
+        """Inicia la competencia"""
+        if not self.is_running:
+            self.is_running = True
+            self.started_at = timezone.now()
+            self.save()
+            return True
+        return False
+
+    def stop(self):
+        """Detiene la competencia"""
+        if self.is_running:
+            self.is_running = False
+            self.finished_at = timezone.now()
+            self.save()
+            return True
+        return False
+
+    def get_status_code(self):
+        """Retorna el código de estado de la competencia"""
+        if self.is_running:
+            return 'running'
+        elif self.finished_at:
+            return 'finished'
+        return 'scheduled'
+
+    def get_status_display(self):
+        """Retorna el texto descriptivo del estado"""
         estados = {
-            'en_curso': 'En Curso',
-            'finalizada': 'Finalizada',
-            'programada': 'Programada'
+            'running': 'En Curso',
+            'finished': 'Finalizada',
+            'scheduled': 'Programada',
         }
-        return estados.get(estado, 'Desconocido')
+        return estados.get(self.get_status_code(), 'Desconocido')

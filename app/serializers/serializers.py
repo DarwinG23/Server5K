@@ -9,15 +9,15 @@ class CompetenciaSerializer(serializers.ModelSerializer):
         model = Competencia
         fields = [
             'id',
-            'nombre',
-            'fecha_hora',
-            'categoria',
-            'activa',
-            'en_curso',
-            'fecha_inicio',
-            'fecha_fin',
+            'name',
+            'datetime',
+            'category',
+            'is_active',
+            'is_running',
+            'started_at',
+            'finished_at',
         ]
-        read_only_fields = ['id', 'fecha_inicio', 'fecha_fin']
+        read_only_fields = ['id', 'started_at', 'finished_at']
 
 
 class JuezMeSerializer(serializers.ModelSerializer):
@@ -34,7 +34,6 @@ class JuezMeSerializer(serializers.ModelSerializer):
             'last_name',
             'full_name',
             'email',
-            'telefono',
         ]
     
     def get_full_name(self, obj):
@@ -44,15 +43,21 @@ class JuezMeSerializer(serializers.ModelSerializer):
 class EquipoSerializer(serializers.ModelSerializer):
     """Serializer para el modelo Equipo - Solo campos básicos"""
     
+    judge_username = serializers.CharField(source='judge.username', read_only=True)
+    competition_id = serializers.IntegerField(source='competition.id', read_only=True)
+    competition_name = serializers.CharField(source='competition.name', read_only=True)
+    
     class Meta:
         model = Equipo
         fields = [
             'id',
-            'nombre',
-            'dorsal',
-            'juez_asignado',
+            'name',
+            'number',
+            'competition_id',
+            'competition_name',
+            'judge_username',
         ]
-        read_only_fields = ['id']
+        read_only_fields = ['id', 'competition_id', 'competition_name', 'judge_username']
 
 
 class RegistroTiempoSerializer(serializers.ModelSerializer):
@@ -61,18 +66,18 @@ class RegistroTiempoSerializer(serializers.ModelSerializer):
     class Meta:
         model = RegistroTiempo
         fields = [
-            'id_registro',
-            'equipo',
-            'tiempo',
-            'timestamp',
-            'horas',
-            'minutos',
-            'segundos',
-            'milisegundos',
+            'record_id',
+            'team',
+            'time',
+            'created_at',
+            'hours',
+            'minutes',
+            'seconds',
+            'milliseconds',
         ]
-        read_only_fields = ['id_registro']
+        read_only_fields = ['record_id']
     
-    def validate_tiempo(self, value):
+    def validate_time(self, value):
         """Valida que el tiempo sea positivo"""
         if value < 0:
             raise serializers.ValidationError("El tiempo no puede ser negativo")
@@ -81,14 +86,14 @@ class RegistroTiempoSerializer(serializers.ModelSerializer):
 
 class SincronizarRegistrosSerializer(serializers.Serializer):
     """Serializer para la sincronización de múltiples registros"""
-    equipo_id = serializers.IntegerField()
+    team_id = serializers.IntegerField()
     registros = serializers.ListField(
         child=serializers.DictField(),
         min_length=1,
         max_length=15
     )
     
-    def validate_equipo_id(self, value):
+    def validate_team_id(self, value):
         """Valida que el equipo exista"""
         from app.models import Equipo
         if not Equipo.objects.filter(id=value).exists():
@@ -98,13 +103,13 @@ class SincronizarRegistrosSerializer(serializers.Serializer):
     def validate_registros(self, value):
         """Valida la estructura de cada registro"""
         for registro in value:
-            if 'tiempo' not in registro:
-                raise serializers.ValidationError("Cada registro debe tener el campo 'tiempo'")
-            if 'timestamp' not in registro:
-                raise serializers.ValidationError("Cada registro debe tener el campo 'timestamp'")
+            if 'time' not in registro:
+                raise serializers.ValidationError("Cada registro debe tener el campo 'time'")
+            if 'created_at' not in registro:
+                raise serializers.ValidationError("Cada registro debe tener el campo 'created_at'")
             
             # Validar que tiempo sea positivo
-            if registro['tiempo'] < 0:
+            if registro['time'] < 0:
                 raise serializers.ValidationError("El tiempo no puede ser negativo")
         
         return value

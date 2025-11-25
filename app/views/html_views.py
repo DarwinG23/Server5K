@@ -10,27 +10,22 @@ from app.models import Competencia, Equipo, RegistroTiempo
 
 def competencia_list_view(request):
     """Listado público de competencias activas (interfaz simple)."""
-    competencias = Competencia.objects.filter(activa=True).order_by('-fecha_hora')
+    competencias = Competencia.objects.filter(is_active=True).order_by('-datetime')
     return render(request, 'app/competencia_list.html', {'competencias': competencias})
 
 
 def competencia_detail_view(request, pk):
     """Detalle de competencia: lista de equipos y sus registros de tiempo."""
-    competencia = get_object_or_404(Competencia, pk=pk, activa=True)
+    competencia = get_object_or_404(Competencia, pk=pk, is_active=True)
     
-    # Obtener TODOS los equipos que tienen registros en ESTA competencia
-    tiempos_qs = RegistroTiempo.objects.filter(competencia=competencia).order_by('tiempo')
+    # Obtener TODOS los equipos de esta competencia con sus registros
+    tiempos_qs = RegistroTiempo.objects.all().order_by('time')
     
-    # Obtener IDs de equipos que participaron en esta competencia
-    equipos_ids = RegistroTiempo.objects.filter(
-        competencia=competencia
-    ).values_list('equipo_id', flat=True).distinct()
-    
-    # Obtener los equipos que participaron
+    # Obtener los equipos de esta competencia
     equipos = Equipo.objects.filter(
-        id__in=equipos_ids
-    ).select_related('juez_asignado').prefetch_related(
-        Prefetch('tiempos', queryset=tiempos_qs, to_attr='prefetched_tiempos')
+        competition=competencia
+    ).select_related('judge').prefetch_related(
+        Prefetch('times', queryset=tiempos_qs, to_attr='prefetched_tiempos')
     )
     
     # Agregar estadísticas a cada equipo
@@ -38,9 +33,9 @@ def competencia_detail_view(request, pk):
         tiempos_competencia = [t for t in equipo.prefetched_tiempos]
         
         if tiempos_competencia:
-            equipo.tiempo_total_ms = sum(t.tiempo for t in tiempos_competencia)
+            equipo.tiempo_total_ms = sum(t.time for t in tiempos_competencia)
             equipo.tiempo_promedio = equipo.tiempo_total_ms // len(tiempos_competencia)
-            equipo.mejor_tiempo_ms = tiempos_competencia[0].tiempo  # Ya están ordenados por tiempo ascendente
+            equipo.mejor_tiempo_ms = tiempos_competencia[0].time  # Ya están ordenados por tiempo ascendente
             
             # Formatear tiempo total
             total_ms = equipo.tiempo_total_ms

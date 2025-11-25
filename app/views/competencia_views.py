@@ -21,7 +21,7 @@ class CompetenciaViewSet(viewsets.ReadOnlyModelViewSet):
     - ?activa=true/false - Filtra por competencias activas
     - ?en_curso=true/false - Filtra por competencias en curso
     """
-    queryset = Competencia.objects.all().order_by('-fecha_hora')
+    queryset = Competencia.objects.all().order_by('-datetime')
     serializer_class = CompetenciaSerializer
     permission_classes = [IsAuthenticated]
     
@@ -30,14 +30,14 @@ class CompetenciaViewSet(viewsets.ReadOnlyModelViewSet):
         description="Obtiene todas las competencias con filtros opcionales",
         parameters=[
             OpenApiParameter(
-                name='activa',
+                name='is_active',
                 type=OpenApiTypes.BOOL,
                 location=OpenApiParameter.QUERY,
                 description='Filtrar por competencias activas (true/false)',
                 required=False,
             ),
             OpenApiParameter(
-                name='en_curso',
+                name='is_running',
                 type=OpenApiTypes.BOOL,
                 location=OpenApiParameter.QUERY,
                 description='Filtrar por competencias en curso (true/false)',
@@ -64,25 +64,29 @@ class CompetenciaViewSet(viewsets.ReadOnlyModelViewSet):
     
     def get_queryset(self):
         """
-        Permite filtrar competencias por activa y en_curso.
-        Solo retorna la competencia del juez autenticado.
+        Permite filtrar competencias por is_active y is_running.
+        Solo retorna la competencia del equipo asignado al juez autenticado.
         """
         queryset = super().get_queryset()
         
-        # Filtrar por la competencia del juez autenticado
+        # Filtrar por la competencia del equipo del juez autenticado
         juez = self.request.user
-        queryset = queryset.filter(id=juez.competencia_id)
+        if hasattr(juez, 'team') and juez.team:
+            queryset = queryset.filter(id=juez.team.competition_id)
+        else:
+            # Si el juez no tiene equipo asignado, no mostrar ninguna competencia
+            queryset = queryset.none()
         
-        # Filtro por activa
-        activa = self.request.query_params.get('activa')
-        if activa is not None:
-            activa_bool = activa.lower() == 'true'
-            queryset = queryset.filter(activa=activa_bool)
+        # Filtro por is_active
+        is_active = self.request.query_params.get('is_active')
+        if is_active is not None:
+            is_active_bool = is_active.lower() == 'true'
+            queryset = queryset.filter(is_active=is_active_bool)
         
-        # Filtro por en_curso
-        en_curso = self.request.query_params.get('en_curso')
-        if en_curso is not None:
-            en_curso_bool = en_curso.lower() == 'true'
-            queryset = queryset.filter(en_curso=en_curso_bool)
+        # Filtro por is_running
+        is_running = self.request.query_params.get('is_running')
+        if is_running is not None:
+            is_running_bool = is_running.lower() == 'true'
+            queryset = queryset.filter(is_running=is_running_bool)
         
         return queryset

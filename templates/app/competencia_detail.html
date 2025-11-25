@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}{{ competencia.nombre }} - Resultados{% endblock %}
+{% block title %}{{ competencia.name }} - Resultados{% endblock %}
 
 {% block content %}
 <!-- Breadcrumb -->
@@ -11,7 +11,7 @@
                 <i class="bi bi-house"></i> Inicio
             </a>
         </li>
-        <li class="breadcrumb-item active">{{ competencia.nombre }}</li>
+        <li class="breadcrumb-item active">{{ competencia.name }}</li>
     </ol>
 </nav>
 
@@ -22,22 +22,22 @@
             <div class="col-md-8">
                 <h1 class="h2 mb-3">
                     <i class="bi bi-trophy-fill text-warning"></i>
-                    {{ competencia.nombre }}
+                    {{ competencia.name }}
                 </h1>
                 <div class="d-flex flex-wrap gap-3">
                     <div>
                         <small class="text-muted d-block">Categoría</small>
                         <span class="badge badge-primary">
-                            {{ competencia.get_categoria_display }}
+                            {{ competencia.get_category_display }}
                         </span>
                     </div>
                     <div>
                         <small class="text-muted d-block">Fecha</small>
-                        <strong>{{ competencia.fecha_hora|date:"d M Y, H:i" }}</strong>
+                        <strong>{{ competencia.datetime|date:"d M Y, H:i" }}</strong>
                     </div>
                     <div>
                         <small class="text-muted d-block">Estado</small>
-                        {% if competencia.en_curso %}
+                        {% if competencia.is_running %}
                             <span class="badge badge-success">
                                 <i class="bi bi-play-circle-fill"></i> En Curso
                             </span>
@@ -123,12 +123,12 @@
                     <!-- Nombre del equipo y juez -->
                     <div class="col-md-4 mb-3 mb-md-0">
                         <h5 class="mb-2">
-                            <span class="badge bg-dark me-2" style="font-size: 1rem;">{{ equipo.dorsal }}</span>
-                            {{ equipo.nombre }}
+                            <span class="badge bg-dark me-2" style="font-size: 1rem;">{{ equipo.number }}</span>
+                            {{ equipo.name }}
                         </h5>
                         <small class="text-muted">
                             <i class="bi bi-person-badge"></i>
-                            Juez: {{ equipo.juez_asignado.get_full_name|default:equipo.juez_asignado.username }}
+                            Juez: {{ equipo.judge.get_full_name|default:equipo.judge.username }}
                         </small>
                     </div>
                     
@@ -140,9 +140,9 @@
                                     <small class="text-muted d-block mb-1">Mejor Tiempo</small>
                                     {% if equipo.prefetched_tiempos %}
                                         <strong class="text-success d-block">
-                                            {{ equipo.prefetched_tiempos.0.horas }}h 
-                                            {{ equipo.prefetched_tiempos.0.minutos }}m 
-                                            {{ equipo.prefetched_tiempos.0.segundos }}s
+                                            {{ equipo.prefetched_tiempos.0.hours }}h 
+                                            {{ equipo.prefetched_tiempos.0.minutes }}m 
+                                            {{ equipo.prefetched_tiempos.0.seconds }}s
                                         </strong>
                                     {% else %}
                                         <strong class="text-muted d-block">--</strong>

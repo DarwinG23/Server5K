@@ -28,8 +28,8 @@ def get_juez_from_token(token):
         if not juez_id:
             return None
         
-        # Obtener el juez con su competencia (select_related para optimizar)
-        juez = Juez.objects.select_related('competencia').get(id=juez_id, activo=True)
+        # Obtener el juez con su equipo asignado (select_related para optimizar)
+        juez = Juez.objects.select_related('team', 'team__competition').get(id=juez_id, is_active=True)
         return juez
     except Exception:
         return None
@@ -46,7 +46,7 @@ def verificar_competencia_activa(juez):
     Returns:
         bool: True si la competencia está activa, False en caso contrario
     """
-    return juez.competencia and juez.competencia.activa
+    return hasattr(juez, 'team') and juez.team and juez.team.competition and juez.team.competition.is_active
 
 
 @database_sync_to_async
@@ -60,7 +60,7 @@ def verificar_competencia_en_curso(juez):
     Returns:
         bool: True si la competencia está en curso, False en caso contrario
     """
-    return juez.competencia and juez.competencia.en_curso
+    return hasattr(juez, 'team') and juez.team and juez.team.competition and juez.team.competition.is_running
 
 
 @database_sync_to_async
@@ -74,14 +74,16 @@ def obtener_estado_competencia(juez):
     Returns:
         dict: Diccionario con información de la competencia o None si no existe
     """
-    if not juez.competencia:
+    if not hasattr(juez, 'team') or not juez.team or not juez.team.competition:
         return None
     
+    competencia = juez.team.competition
+    
     return {
-        'id': juez.competencia.id,
-        'nombre': juez.competencia.nombre,
-        'en_curso': juez.competencia.en_curso,
-        'activa': juez.competencia.activa,
+        'id': competencia.id,
+        'nombre': competencia.name,
+        'en_curso': competencia.is_running,
+        'activa': competencia.is_active,
     }
 
 
@@ -101,7 +103,7 @@ def validar_equipo_pertenece_juez(equipo_id, juez_id):
     
     try:
         equipo = Equipo.objects.get(id=equipo_id)
-        return equipo.juez_asignado_id == juez_id
+        return equipo.judge_id == juez_id
     except Equipo.DoesNotExist:
         return False
 

@@ -1,16 +1,3 @@
-"""
-Módulo: registro_service
-Responsable de procesar y validar los registros de tiempo enviados por los jueces.
-Asegura idempotencia, concurrencia y transacciones seguras.
-
-Características:
-- Validación de equipos y jueces
-- Idempotencia por id_registro
-- Transacciones atómicas
-- Evita duplicados
-- Limita a máximo 15 registros por equipo
-"""
-
 from django.db import transaction
 from channels.db import database_sync_to_async
 from typing import Dict, List, Any
@@ -18,9 +5,6 @@ import uuid
 
 
 class RegistroService:
-    """
-    Servicio para gestionar el registro de tiempos de equipos.
-    """
     
     MAX_REGISTROS_POR_EQUIPO = 15
     
@@ -56,11 +40,20 @@ class RegistroService:
         
         try:
             with transaction.atomic():
-                # Refrescar el juez con su competencia para tener datos actualizados
-                juez_actualizado = Juez.objects.select_related('competencia').get(id=juez.id)
+                # Refrescar el juez con su equipo asignado
+                juez_actualizado = Juez.objects.select_related('equipo', 'equipo__competencia').get(id=juez.id)
+                
+                # Verificar que el juez tenga un equipo asignado
+                if not hasattr(juez_actualizado, 'equipo') or not juez_actualizado.equipo:
+                    return {
+                        'exito': False,
+                        'error': 'El juez no tiene un equipo asignado'
+                    }
+                
+                competencia_juez = juez_actualizado.team.competition
                 
                 # Verificar que la competencia esté en curso
-                if not juez_actualizado.competencia or not juez_actualizado.competencia.en_curso:
+                if not competencia_juez or not competencia_juez.is_running:
                     return {
                         'exito': False,
                         'error': 'No se pueden registrar tiempos. La competencia no ha iniciado o ya finalizó.'
@@ -75,7 +68,7 @@ class RegistroService:
                         'error': f'El equipo con ID {equipo_id} no existe'
                     }
                 
-                if equipo.juez_asignado_id != juez.id:
+                if equipo.juez_id != juez.id:
                     return {
                         'exito': False,
                         'error': f'El equipo con ID {equipo_id} no pertenece a tu lista de equipos asignados'
@@ -96,8 +89,7 @@ class RegistroService:
                 
                 # Contar registros actuales del equipo en esta competencia
                 num_registros = RegistroTiempo.objects.filter(
-                    equipo=equipo,
-                    competencia=juez_actualizado.competencia
+                    equipo=equipo
                 ).count()
                 
                 if num_registros >= self.MAX_REGISTROS_POR_EQUIPO:
@@ -106,11 +98,10 @@ class RegistroService:
                         'error': f'El equipo ya tiene el máximo de {self.MAX_REGISTROS_POR_EQUIPO} registros permitidos'
                     }
                 
-                # Crear el registro de tiempo
+                # Crear el registro de tiempo (sin campo competencia, se obtiene via equipo)
                 registro = RegistroTiempo.objects.create(
                     id_registro=id_registro or uuid.uuid4(),
                     equipo=equipo,
-                    competencia=juez_actualizado.competencia,
                     tiempo=tiempo,
                     horas=horas,
                     minutos=minutos,
@@ -155,11 +146,26 @@ class RegistroService:
         
         try:
             with transaction.atomic():
-                # Refrescar el juez con su competencia
-                juez_actualizado = Juez.objects.select_related('competencia').get(id=juez.id)
+                # Refrescar el juez con su equipo asignado
+                juez_actualizado = Juez.objects.select_related('equipo', 'equipo__competencia').get(id=juez.id)
+                
+                # Verificar que el juez tenga un equipo asignado
+                if not hasattr(juez_actualizado, 'equipo') or not juez_actualizado.equipo:
+                    return {
+                        'total_enviados': len(registros),
+                        'total_guardados': 0,
+                        'total_fallidos': len(registros),
+                        'registros_guardados': [],
+                        'registros_fallidos': [
+                            {'indice': i, 'error': 'El juez no tiene un equipo asignado'}
+                            for i in range(len(registros))
+                        ]
+                    }
+                
+                competencia_juez = juez_actualizado.team.competition
                 
                 # Verificar que la competencia esté en curso
-                if not juez_actualizado.competencia or not juez_actualizado.competencia.en_curso:
+                if not competencia_juez or not competencia_juez.is_running:
                     return {
                         'total_enviados': len(registros),
                         'total_guardados': 0,
@@ -186,7 +192,7 @@ class RegistroService:
                         ]
                     }
                 
-                if equipo.juez_asignado_id != juez.id:
+                if equipo.juez_id != juez.id:
                     return {
                         'total_enviados': len(registros),
                         'total_guardados': 0,
@@ -200,8 +206,7 @@ class RegistroService:
                 
                 # Contar registros actuales
                 num_registros_actuales = RegistroTiempo.objects.filter(
-                    equipo=equipo,
-                    competencia=juez_actualizado.competencia
+                    equipo=equipo
                 ).count()
                 
                 # Procesar cada registro
@@ -238,17 +243,16 @@ class RegistroService:
                             if registro_existente:
                                 registros_guardados.append({
                                     'indice': idx,
-                                    'id_registro': str(registro_existente.id_registro),
-                                    'tiempo': registro_existente.tiempo,
+                                    'id_registro': str(registro_existente.record_id),
+                                    'tiempo': registro_existente.time,
                                     'duplicado': True
                                 })
                                 continue
                         
-                        # Crear el registro
+                        # Crear el registro (sin campo competencia)
                         registro = RegistroTiempo.objects.create(
                             id_registro=id_registro or uuid.uuid4(),
                             equipo=equipo,
-                            competencia=juez_actualizado.competencia,
                             tiempo=tiempo,
                             horas=horas,
                             minutos=minutos,
@@ -258,8 +262,8 @@ class RegistroService:
                         
                         registros_guardados.append({
                             'indice': idx,
-                            'id_registro': str(registro.id_registro),
-                            'tiempo': registro.tiempo,
+                            'id_registro': str(registro.record_id),
+                            'tiempo': registro.time,
                             'duplicado': False
                         })
                         

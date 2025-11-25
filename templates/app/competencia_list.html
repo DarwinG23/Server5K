@@ -15,7 +15,7 @@
             <div class="card h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start mb-3">
-                        <h5 class="card-title mb-0">{{ competencia.nombre }}</h5>
+                        <h5 class="card-title mb-0">{{ competencia.name }}</h5>
                         {% with estado=competencia.get_estado_display %}
                             {% if estado == 'en_curso' %}
                                 <span class="badge badge-success">
@@ -36,15 +36,15 @@
                     <div class="mb-3">
                         <p class="text-muted mb-2">
                             <i class="bi bi-calendar3"></i> 
-                            {{ competencia.fecha_hora|date:"d M Y" }}
+                            {{ competencia.datetime|date:"d M Y" }}
                         </p>
                         <p class="text-muted mb-2">
                             <i class="bi bi-clock"></i> 
-                            {{ competencia.fecha_hora|date:"H:i" }}
+                            {{ competencia.datetime|date:"H:i" }}
                         </p>
                         <p class="text-muted mb-0">
                             <i class="bi bi-tag"></i> 
-                            {{ competencia.get_categoria_display }}
+                            {{ competencia.get_category_display }}
                         </p>
                     </div>
                     

@@ -72,10 +72,17 @@ class JuezConsumer(AsyncJsonWebsocketConsumer):
 
         # Unirse al grupo del juez y al grupo de la competencia
         self.group_name = f'juez_{self.juez_id}'
-        self.competencia_group = f'competencia_{self.juez.competencia_id}'
+        
+        # Obtener competencia_id del equipo asignado al juez
+        competencia_id = None
+        if hasattr(self.juez, 'team') and self.juez.team:
+            competencia_id = self.juez.team.competition_id
+        
+        if competencia_id:
+            self.competencia_group = f'competencia_{competencia_id}'
+            await self.channel_layer.group_add(self.competencia_group, self.channel_name)
         
         await self.channel_layer.group_add(self.group_name, self.channel_name)
-        await self.channel_layer.group_add(self.competencia_group, self.channel_name)
         
         await self.accept()
         
@@ -171,16 +178,16 @@ class JuezConsumer(AsyncJsonWebsocketConsumer):
                 await self.send_json({
                     'tipo': 'tiempo_registrado',
                     'registro': {
-                        'id_registro': str(registro.id_registro),
-                        'equipo_id': registro.equipo_id,
-                        'equipo_nombre': registro.equipo.nombre,
-                        'equipo_dorsal': registro.equipo.dorsal,
-                        'tiempo': registro.tiempo,
-                        'horas': registro.horas,
-                        'minutos': registro.minutos,
-                        'segundos': registro.segundos,
-                        'milisegundos': registro.milisegundos,
-                        'timestamp': registro.timestamp.isoformat()
+                        'id_registro': str(registro.record_id),
+                        'equipo_id': registro.team_id,
+                        'equipo_nombre': registro.team.name,
+                        'equipo_dorsal': registro.team.number,
+                        'tiempo': registro.time,
+                        'horas': registro.hours,
+                        'minutos': registro.minutes,
+                        'segundos': registro.seconds,
+                        'milisegundos': registro.milliseconds,
+                        'timestamp': registro.created_at.isoformat()
                     }
                 })
             else:
