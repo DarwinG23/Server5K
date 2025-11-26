@@ -45,7 +45,20 @@ class Competencia(models.Model):
         self.is_running = True
         self.started_at = timezone.now()
         self.save()
-        return {'success': True, 'message': 'started'}
+        
+        # Notificar por WebSocket usando el servicio
+        from app.services.competencia_service import CompetenciaService
+        service = CompetenciaService()
+        service._notificar_jueces_competencia(
+            competencia_id=self.id,
+            tipo='competencia_iniciada',
+            mensaje='La competencia ha iniciado',
+            competencia_nombre=self.name,
+            en_curso=True,
+            started_at=self.started_at.isoformat() if self.started_at else None
+        )
+        
+        return {'success': True, 'message': 'started', 'competencia': self}
 
     def stop(self):
         """Detiene la competencia"""
@@ -55,7 +68,20 @@ class Competencia(models.Model):
         self.is_running = False
         self.finished_at = timezone.now()
         self.save()
-        return {'success': True, 'message': 'stopped'}
+        
+        # Notificar por WebSocket usando el servicio
+        from app.services.competencia_service import CompetenciaService
+        service = CompetenciaService()
+        service._notificar_jueces_competencia(
+            competencia_id=self.id,
+            tipo='competencia_detenida',
+            mensaje='La competencia ha finalizado',
+            competencia_nombre=self.name,
+            en_curso=False,
+            finished_at=self.finished_at.isoformat() if self.finished_at else None
+        )
+        
+        return {'success': True, 'message': 'stopped', 'competencia': self}
 
     def get_status_code(self):
         """Retorna el código de estado de la competencia"""

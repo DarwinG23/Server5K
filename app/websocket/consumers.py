@@ -340,6 +340,7 @@ class JuezConsumer(AsyncJsonWebsocketConsumer):
                 'id': data.get('competencia_id'),
                 'nombre': data.get('competencia_nombre'),
                 'en_curso': data.get('en_curso', True),
+                'started_at': data.get('started_at'),  # Timestamp de inicio del servidor
             }
         }
         
@@ -368,6 +369,8 @@ class JuezConsumer(AsyncJsonWebsocketConsumer):
             'competencia': {
                 'id': data.get('competencia_id'),
                 'nombre': data.get('competencia_nombre'),
+                'started_at': data.get('started_at'),  # Timestamp de inicio
+                'finished_at': data.get('finished_at'),  # Timestamp de finalización
                 'en_curso': data.get('en_curso', False),
             }
         }

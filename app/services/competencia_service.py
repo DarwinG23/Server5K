@@ -68,7 +68,8 @@ class CompetenciaService:
                 tipo='competencia_iniciada',
                 mensaje='La competencia ha iniciado',
                 competencia_nombre=competencia.name,
-                en_curso=True
+                en_curso=True,
+                started_at=competencia.started_at.isoformat() if competencia.started_at else None
             )
             
             return {
@@ -119,7 +120,9 @@ class CompetenciaService:
                 tipo='competencia_detenida',
                 mensaje='La competencia ha finalizado',
                 competencia_nombre=competencia.name,
-                en_curso=False
+                en_curso=False,
+                started_at=competencia.started_at.isoformat() if competencia.started_at else None,
+                finished_at=competencia.finished_at.isoformat() if competencia.finished_at else None
             )
             
             return {
@@ -144,7 +147,9 @@ class CompetenciaService:
         tipo: str,
         mensaje: str,
         competencia_nombre: str,
-        en_curso: bool
+        en_curso: bool,
+        started_at: str = None,
+        finished_at: str = None
     ):
         """
         Notifica a todos los jueces de una competencia sobre un cambio de estado.
@@ -170,6 +175,8 @@ class CompetenciaService:
                     'competencia_id': competencia_id,
                     'competencia_nombre': competencia_nombre,
                     'en_curso': en_curso,
+                    'started_at': started_at,
+                    'finished_at': finished_at,
                 }
             }
         )
