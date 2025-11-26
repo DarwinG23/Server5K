@@ -1,0 +1,176 @@
+/* ====================================
+   ANIMACIONES SUTILES Y ELEGANTES
+   ==================================== */
+
+/* Animación de entrada suave */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.card {
+    animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Retraso escalonado sutil */
+.row > div:nth-child(1) .card { animation-delay: 0s; }
+.row > div:nth-child(2) .card { animation-delay: 0.05s; }
+.row > div:nth-child(3) .card { animation-delay: 0.1s; }
+.row > div:nth-child(4) .card { animation-delay: 0.15s; }
+.row > div:nth-child(5) .card { animation-delay: 0.2s; }
+.row > div:nth-child(6) .card { animation-delay: 0.25s; }
+
+/* Efecto hover sutil en cards */
+.card {
+    transform: translateZ(0);
+    will-change: transform, box-shadow;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+/* Transición suave en botones */
+.btn {
+    position: relative;
+    overflow: hidden;
+}
+
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.btn:active::before {
+    width: 300px;
+    height: 300px;
+}
+
+/* Indicador de estado activo */
+@keyframes pulse-subtle {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.85;
+    }
+}
+
+.badge-success {
+    animation: pulse-subtle 3s ease-in-out infinite;
+}
+
+/* Animación del navbar */
+.navbar {
+    animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Hover en links */
+.nav-link,
+.breadcrumb-item a {
+    position: relative;
+}
+
+.nav-link::after,
+.breadcrumb-item a::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 0;
+    height: 1px;
+    background: var(--primary-color);
+    transition: width 0.3s ease, left 0.3s ease;
+}
+
+.nav-link:hover::after,
+.breadcrumb-item a:hover::after {
+    width: 100%;
+    left: 0;
+}
+
+/* Efecto sutil en stats boxes */
+.stats-box {
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.stats-box:hover {
+    transform: scale(1.02);
+}
+
+/* Focus elegante */
+.btn:focus-visible,
+.nav-link:focus-visible,
+a:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+    border-radius: var(--border-radius-sm);
+}
+
+/* Transición global suave */
+* {
+    transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
+    transition-duration: 0.2s;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Desactivar transiciones en elementos específicos */
+*:not(.card):not(.btn):not(.badge):not(.stats-box) {
+    transition-property: none;
+}
+
+.card, .btn, .badge, .stats-box, .nav-link, a {
+    transition-property: all;
+}
+
+/* Loading skeleton (opcional) */
+@keyframes shimmer {
+    0% {
+        background-position: -1000px 0;
+    }
+    100% {
+        background-position: 1000px 0;
+    }
+}
+
+.skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e6e6e6 50%, #f0f0f0 75%);
+    background-size: 1000px 100%;
+    animation: shimmer 2s infinite;
+}
+
+/* Reduce motion para accesibilidad */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}

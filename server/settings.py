@@ -155,6 +155,11 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'  # ← Directorio donde se recolectan archivos estáticos
 
+# Directorios adicionales donde Django buscará archivos estáticos
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',  # ← Carpeta static en la raíz del proyecto
+]
+
 # WhiteNoise configuration para servir archivos estáticos con Daphne
 STORAGES = {
     "default": {

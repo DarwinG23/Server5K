@@ -4,14 +4,14 @@
 
 {% block content %}
 <div class="page-header">
-    <h1><i class="bi bi-trophy"></i> Competencias Activas</h1>
-    <p>Selecciona una competencia para ver los resultados detallados por equipo</p>
+    <h1><i class="bi-trophy"></i> Competencias</h1>
+    <p>Selecciona una competencia para ver los resultados detallados</p>
 </div>
 
 {% if competencias %}
     <div class="row g-4">
         {% for competencia in competencias %}
-        <div class="col-md-6 col-lg-4">
+        <div class="col-12 col-md-6 col-lg-4">
             <div class="card h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start mb-3">
@@ -19,37 +19,37 @@
                         {% with estado=competencia.get_estado_display %}
                             {% if estado == 'en_curso' %}
                                 <span class="badge badge-success">
-                                    <i class="bi bi-play-circle-fill"></i> En Curso
+                                    <i class="bi-play-circle-fill"></i> En curso
                                 </span>
                             {% elif estado == 'finalizada' %}
-                                <span class="badge bg-dark text-white">
-                                    <i class="bi bi-check-circle-fill"></i> Finalizada
+                                <span class="badge bg-dark">
+                                    <i class="bi-check-circle-fill"></i> Finalizada
                                 </span>
                             {% else %}
                                 <span class="badge badge-secondary">
-                                    <i class="bi bi-clock-history"></i> Programada
+                                    <i class="bi-clock-history"></i> Programada
                                 </span>
                             {% endif %}
                         {% endwith %}
                     </div>
                     
                     <div class="mb-3">
-                        <p class="text-muted mb-2">
-                            <i class="bi bi-calendar3"></i> 
+                        <div class="info-chip mb-2">
+                            <i class="bi-calendar3"></i> 
                             {{ competencia.datetime|date:"d M Y" }}
-                        </p>
-                        <p class="text-muted mb-2">
-                            <i class="bi bi-clock"></i> 
+                        </div>
+                        <div class="info-chip mb-2">
+                            <i class="bi-clock"></i> 
                             {{ competencia.datetime|date:"H:i" }}
-                        </p>
-                        <p class="text-muted mb-0">
-                            <i class="bi bi-tag"></i> 
+                        </div>
+                        <div class="info-chip">
+                            <i class="bi-tag"></i> 
                             {{ competencia.get_category_display }}
-                        </p>
+                        </div>
                     </div>
                     
                     <a href="{% url 'ui:competencia_detail' competencia.pk %}" class="btn btn-primary w-100">
-                        <i class="bi bi-eye"></i> Ver Resultados
+                        <i class="bi-eye"></i> Ver resultados
                     </a>
                 </div>
             </div>
@@ -60,8 +60,8 @@
     <div class="card">
         <div class="card-body">
             <div class="empty-state">
-                <i class="bi bi-inbox"></i>
-                <h3>No hay competencias activas</h3>
+                <i class="bi-inbox"></i>
+                <h3>No hay competencias</h3>
                 <p class="text-muted">Las competencias aparecerán aquí cuando sean creadas</p>
             </div>
         </div>
