@@ -3,55 +3,68 @@
 {% block title %}Lista de Competencias{% endblock %}
 
 {% block content %}
-<div class="page-header">
-    <h1><i class="bi-trophy"></i> Competencias</h1>
-    <p>Selecciona una competencia para ver los resultados detallados</p>
+<div style="margin-bottom: 2rem;">
+    <h1 style="font-size: 2rem; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.625rem;">
+        <i class="bi-trophy" style="color: var(--primary);"></i> 
+        Competencias
+    </h1>
+    <p style="color: var(--text-secondary); font-size: 0.938rem;">
+        Selecciona una competencia para ver los resultados detallados y el ranking de equipos
+    </p>
 </div>
 
 {% if competencias %}
-    <div class="row g-4">
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.25rem;">
         {% for competencia in competencias %}
-        <div class="col-12 col-md-6 col-lg-4">
-            <div class="card h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <h5 class="card-title mb-0">{{ competencia.name }}</h5>
-                        {% with estado=competencia.get_estado_display %}
-                            {% if estado == 'en_curso' %}
-                                <span class="badge badge-success">
-                                    <i class="bi-play-circle-fill"></i> En curso
-                                </span>
-                            {% elif estado == 'finalizada' %}
-                                <span class="badge bg-dark">
-                                    <i class="bi-check-circle-fill"></i> Finalizada
-                                </span>
-                            {% else %}
-                                <span class="badge badge-secondary">
-                                    <i class="bi-clock-history"></i> Programada
-                                </span>
-                            {% endif %}
-                        {% endwith %}
-                    </div>
-                    
-                    <div class="mb-3">
-                        <div class="info-chip mb-2">
-                            <i class="bi-calendar3"></i> 
-                            {{ competencia.datetime|date:"d M Y" }}
-                        </div>
-                        <div class="info-chip mb-2">
-                            <i class="bi-clock"></i> 
-                            {{ competencia.datetime|date:"H:i" }}
-                        </div>
-                        <div class="info-chip">
-                            <i class="bi-tag"></i> 
-                            {{ competencia.get_category_display }}
-                        </div>
-                    </div>
-                    
-                    <a href="{% url 'ui:competencia_detail' competencia.pk %}" class="btn btn-primary w-100">
-                        <i class="bi-eye"></i> Ver resultados
-                    </a>
+        <div class="card" style="height: 100%; transition: all 0.3s;">
+            <div class="card-body" style="display: flex; flex-direction: column; height: 100%; padding: 1.25rem;">
+                
+                <!-- Header -->
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1.25rem;">
+                    <h5 style="font-size: 1.125rem; font-weight: 700; margin: 0; letter-spacing: -0.02em; flex: 1;">
+                        {{ competencia.name }}
+                    </h5>
+                    {% if competencia.is_running %}
+                        <span class="badge badge-success">
+                            <i class="bi-play-circle-fill"></i> En curso
+                        </span>
+                    {% else %}
+                        <span class="badge badge-secondary">
+                            <i class="bi-check-circle-fill"></i> Finalizada
+                        </span>
+                    {% endif %}
                 </div>
+                
+                <!-- Info Grid -->
+                <div style="display: flex; flex-direction: column; gap: 0.625rem; margin-bottom: 1.25rem; flex: 1;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; background: var(--bg-light); border-radius: var(--radius-sm); border: 1px solid var(--border);">
+                        <i class="bi-calendar3" style="color: var(--primary); font-size: 0.938rem;"></i>
+                        <span style="font-weight: 500; color: var(--text-secondary); font-size: 0.813rem;">
+                            {{ competencia.datetime|date:"d M Y" }}
+                        </span>
+                    </div>
+                    
+                    <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; background: var(--bg-light); border-radius: var(--radius-sm); border: 1px solid var(--border);">
+                        <i class="bi-clock" style="color: var(--primary); font-size: 0.938rem;"></i>
+                        <span style="font-weight: 500; color: var(--text-secondary); font-size: 0.813rem;">
+                            {{ competencia.datetime|date:"H:i" }}
+                        </span>
+                    </div>
+                    
+                    <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; background: var(--bg-light); border-radius: var(--radius-sm); border: 1px solid var(--border);">
+                        <i class="bi-tag" style="color: var(--primary); font-size: 0.938rem;"></i>
+                        <span style="font-weight: 500; color: var(--text-secondary); font-size: 0.813rem;">
+                            {{ competencia.get_category_display }}
+                        </span>
+                    </div>
+                </div>
+                
+                <!-- Action Button -->
+                <a href="{% url 'ui:competencia_detail' competencia.pk %}" 
+                   class="btn btn-primary" 
+                   style="width: 100%; justify-content: center; font-size: 0.875rem; padding: 0.625rem 1rem;">
+                    <i class="bi-eye"></i> Ver Resultados
+                </a>
             </div>
         </div>
         {% endfor %}
@@ -59,10 +72,14 @@
 {% else %}
     <div class="card">
         <div class="card-body">
-            <div class="empty-state">
-                <i class="bi-inbox"></i>
-                <h3>No hay competencias</h3>
-                <p class="text-muted">Las competencias aparecerán aquí cuando sean creadas</p>
+            <div style="text-align: center; padding: 3rem 2rem;">
+                <i class="bi-inbox" style="font-size: 4rem; color: var(--text-muted); opacity: 0.4; margin-bottom: 1.25rem;"></i>
+                <h3 style="color: var(--text-secondary); font-weight: 600; font-size: 1.25rem; margin-bottom: 0.625rem;">
+                    No hay competencias disponibles
+                </h3>
+                <p class="text-muted" style="font-size: 0.938rem;">
+                    Las competencias aparecerán aquí cuando sean creadas
+                </p>
             </div>
         </div>
     </div>

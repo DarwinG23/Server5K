@@ -269,14 +269,23 @@ class CompetenciaAdmin(admin.ModelAdmin):
 
 @admin.register(Equipo)
 class EquipoAdmin(admin.ModelAdmin):
-    list_display = ['number', 'name', 'competition', 'judge', 'num_registros']
-    list_filter = ['competition']
-    search_fields = ['name']
+    list_display = ['number', 'name', 'competition', 'judge', 'num_registros', 'ver_resultados']
+    list_filter = ['competition', 'judge']
+    search_fields = ['name', 'number']
     inlines = [RegistroTiempoInline]
+    list_select_related = ['competition', 'judge']
 
     def num_registros(self, obj):
         return obj.times.count()
     num_registros.short_description = 'Registros'
+
+    def ver_resultados(self, obj):
+        from django.urls import reverse
+        from django.utils.html import format_html
+        url = reverse('admin:app_resultadoequipo_change', args=[obj.pk])
+        return format_html('<a href="{}" class="button">Ver Resultados</a>', url)
+    ver_resultados.short_description = 'Resultados'
+    ver_resultados.allow_tags = True
 
 
 @admin.register(Juez)
@@ -327,9 +336,17 @@ class RegistroTiempoAdmin(admin.ModelAdmin):
 
 @admin.register(ResultadoEquipo)
 class ResultadoEquipoAdmin(admin.ModelAdmin):
-    list_display = ['number', 'name', 'competition', 'tiempo_total_display']
+    list_display = ['number', 'name', 'competition', 'tiempo_total_display', 'num_registros']
     list_filter = ['competition']
-    search_fields = ['name']
+    search_fields = ['name', 'number']
+    inlines = [RegistroTiempoInline]
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).prefetch_related('times')
+
+    def num_registros(self, obj):
+        return obj.times.count()
+    num_registros.short_description = 'Nº Registros'
     
     def tiempo_total_display(self, obj):
         total = obj.total_time()
@@ -337,6 +354,7 @@ class ResultadoEquipoAdmin(admin.ModelAdmin):
             hours = total // 3600000
             minutes = (total % 3600000) // 60000
             seconds = (total % 60000) // 1000
-            return f"{hours}h {minutes}m {seconds}s"
+            milliseconds = total % 1000
+            return f"{hours}h {minutes}m {seconds}s {milliseconds}ms"
         return '-'
     tiempo_total_display.short_description = 'Tiempo Total'

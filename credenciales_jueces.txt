@@ -1,118 +1,118 @@
 ======================================================================
 CREDENCIALES DE ACCESO - SISTEMA 5K
-Generado: 26/11/2025 17:08:37
-Competencia: 5K Badajoz 2025
+Generado: 27/11/2025 13:58:44
+Competencia: 5K Málaga 2025
 ======================================================================
 
 JUEZ #01
-  Nombre: Esther Carrasco
+  Nombre: Dafne Pedrosa
   Usuario: juez1
-  Email: chelo29@example.net
+  Email: etelvina90@example.com
   Contraseña: juez1123
 ----------------------------------------------------------------------
 
 JUEZ #02
-  Nombre: Úrsula Feliu
+  Nombre: Tamara Riquelme
   Usuario: juez2
-  Email: hruiz@example.org
+  Email: eperalta@example.org
   Contraseña: juez2123
 ----------------------------------------------------------------------
 
 JUEZ #03
-  Nombre: Belen Ugarte
+  Nombre: Ema Lobato
   Usuario: juez3
-  Email: mauricio72@example.com
+  Email: xbecerra@example.org
   Contraseña: juez3123
 ----------------------------------------------------------------------
 
 JUEZ #04
-  Nombre: Mamen Rico
+  Nombre: Prudencio Riera
   Usuario: juez4
-  Email: codinaandrea@example.net
+  Email: yessica97@example.org
   Contraseña: juez4123
 ----------------------------------------------------------------------
 
 JUEZ #05
-  Nombre: María Manuela Carvajal
+  Nombre: Marc Castejón
   Usuario: juez5
-  Email: primitivaquero@example.com
+  Email: felicidadanguita@example.com
   Contraseña: juez5123
 ----------------------------------------------------------------------
 
 JUEZ #06
-  Nombre: Adrián Sanz
+  Nombre: Salvador Esparza
   Usuario: juez6
-  Email: jordisarabia@example.org
+  Email: vpedraza@example.org
   Contraseña: juez6123
 ----------------------------------------------------------------------
 
 JUEZ #07
-  Nombre: Edgardo Ros
+  Nombre: Juan Manuel Fabra
   Usuario: juez7
-  Email: ycobo@example.com
+  Email: segismundoroldan@example.com
   Contraseña: juez7123
 ----------------------------------------------------------------------
 
 JUEZ #08
-  Nombre: Marcelino Peiró
+  Nombre: Vasco Palomares
   Usuario: juez8
-  Email: felipa97@example.net
+  Email: urbano48@example.org
   Contraseña: juez8123
 ----------------------------------------------------------------------
 
 JUEZ #09
-  Nombre: Reyes Páez
+  Nombre: Guadalupe Heras
   Usuario: juez9
-  Email: martorellbalduino@example.net
+  Email: pintorcayetano@example.com
   Contraseña: juez9123
 ----------------------------------------------------------------------
 
 JUEZ #10
-  Nombre: Yésica Cabrera
+  Nombre: Alejandra Sanz
   Usuario: juez10
-  Email: zmoran@example.org
+  Email: larenas@example.com
   Contraseña: juez10123
 ----------------------------------------------------------------------
 
 JUEZ #11
-  Nombre: Apolonia Escudero
+  Nombre: Encarnación Acero
   Usuario: juez11
-  Email: chucho97@example.com
+  Email: coellojuan-francisco@example.com
   Contraseña: juez11123
 ----------------------------------------------------------------------
 
 JUEZ #12
-  Nombre: Eusebio Samper
+  Nombre: Sebastián Fonseca
   Usuario: juez12
-  Email: guadalupelopez@example.net
+  Email: bernardinoleon@example.com
   Contraseña: juez12123
 ----------------------------------------------------------------------
 
 JUEZ #13
-  Nombre: Joaquina Perez
+  Nombre: Porfirio Roura
   Usuario: juez13
-  Email: martiriocadenas@example.com
+  Email: macevedo@example.net
   Contraseña: juez13123
 ----------------------------------------------------------------------
 
 JUEZ #14
-  Nombre: Esteban Alcalá
+  Nombre: Estrella Arana
   Usuario: juez14
-  Email: kbravo@example.net
+  Email: moranveronica@example.com
   Contraseña: juez14123
 ----------------------------------------------------------------------
 
 JUEZ #15
-  Nombre: Reina Vall
+  Nombre: Isidora Palau
   Usuario: juez15
-  Email: teofila66@example.org
+  Email: xmoliner@example.org
   Contraseña: juez15123
 ----------------------------------------------------------------------
 
 JUEZ #16
-  Nombre: Amor Tirado
+  Nombre: Melchor Angulo
   Usuario: juez16
-  Email: ana-sofiarodrigo@example.net
+  Email: lcalderon@example.org
   Contraseña: juez16123
 ----------------------------------------------------------------------
 

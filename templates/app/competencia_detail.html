@@ -1,11 +1,12 @@
 {% extends 'base.html' %}
-{% load time_filters %}
 
 {% block title %}{{ competencia.name }} - Resultados{% endblock %}
 
+
+
 {% block content %}
 <!-- Breadcrumb -->
-<nav aria-label="breadcrumb" class="mb-4">
+<nav aria-label="breadcrumb" style="margin-bottom: 1.5rem;">
     <ol class="breadcrumb">
         <li class="breadcrumb-item">
             <a href="{% url 'ui:competencia_list' %}">
@@ -16,153 +17,169 @@
     </ol>
 </nav>
 
-<!-- Header de Competencia -->
+<!-- Header Compacto -->
 <div class="card competition-header mb-4">
-    <div class="card-body">
-        <div class="row align-items-center">
-            <div class="col-12 col-md-8 mb-3 mb-md-0">
-                <h2 class="mb-3" style="display: flex; align-items: center; gap: 0.625rem;">
-                    <i class="bi-trophy-fill" style="color: #d97706; font-size: 1.5rem;"></i>
-                    {{ competencia.name }}
-                </h2>
-                <div class="d-flex flex-wrap gap-3">
-                    <div>
-                        <div class="stats-label">Categoría</div>
-                        <span class="badge badge-primary">
-                            {{ competencia.get_category_display }}
-                        </span>
-                    </div>
-                    <div>
-                        <div class="stats-label">Fecha</div>
-                        <strong style="font-size: 0.875rem;">{{ competencia.datetime|date:"d M Y, H:i" }}</strong>
-                    </div>
-                    <div>
-                        <div class="stats-label">Estado</div>
-                        {% if competencia.is_running %}
-                            <span class="badge badge-success">
-                                <i class="bi-play-circle-fill"></i> En curso
-                            </span>
-                        {% else %}
-                            <span class="badge badge-secondary">Finalizada</span>
-                        {% endif %}
-                    </div>
-                </div>
+    <div class="card-body" style="padding: 1.25rem 1.5rem;">
+        <h2 style="display: flex; align-items: center; gap: 0.625rem; margin-bottom: 1rem;">
+            <i class="bi-trophy-fill" style="color: var(--gold); font-size: 1.5rem;"></i>
+            {{ competencia.name }}
+        </h2>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+            <div>
+                <div class="stats-label">Categoría</div>
+                <span class="badge badge-primary" style="font-size: 0.813rem;">
+                    {{ competencia.get_category_display }}
+                </span>
             </div>
-            <div class="col-12 col-md-4 text-md-end">
-                <div class="stats-label">Total de Equipos</div>
-                <h3 class="mb-0" style="font-size: 2rem; font-weight: 600;">{{ equipos|length }}</h3>
+            <div>
+                <div class="stats-label">Fecha y Hora</div>
+                <strong style="font-size: 0.875rem; color: var(--text-primary);">
+                    {{ competencia.datetime|date:"d M Y, H:i" }}
+                </strong>
+            </div>
+            <div>
+                <div class="stats-label">Estado</div>
+                {% if competencia.is_running %}
+                    <span class="badge badge-success" style="font-size: 0.813rem;">
+                        <i class="bi-play-circle-fill"></i> En Curso
+                    </span>
+                {% else %}
+                    <span class="badge badge-secondary" style="font-size: 0.813rem;">Finalizada</span>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if not en_curso %}
+        <!-- Resumen solo cuando está finalizada -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.875rem; padding-top: 1rem; border-top: 1px solid var(--border);">
+            <div class="stats-box" style="padding: 0.75rem;">
+                <div class="stats-label">Total Equipos</div>
+                <div class="stats-value">{{ equipos|length }}</div>
+            </div>
+            <div class="stats-box" style="padding: 0.75rem;">
+                <div class="stats-label">Calificados</div>
+                <div class="stats-value text-success">{{ equipos_calificados }}</div>
+            </div>
+            <div class="stats-box" style="padding: 0.75rem;">
+                <div class="stats-label">Descalificados</div>
+                <div class="stats-value text-danger">{{ equipos_descalificados }}</div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if en_curso %}
+<!-- Vista de Competencia en Curso -->
+<div class="card" style="border: 2px solid var(--success); background: linear-gradient(135deg, var(--success-light) 0%, var(--bg-white) 100%);">
+    <div class="card-body" style="padding: 2.5rem 2rem; text-align: center;">
+        <div style="margin-bottom: 1.5rem;">
+            <i class="bi-play-circle-fill" style="font-size: 3.5rem; color: var(--success); animation: pulse-subtle 2s ease-in-out infinite;"></i>
+        </div>
+        <h3 style="font-size: 1.375rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.625rem;">
+            ⚡ Competencia en Curso
+        </h3>
+        <p style="color: var(--text-secondary); font-size: 0.938rem; margin-bottom: 1.25rem; max-width: 480px; margin-left: auto; margin-right: auto;">
+            Los resultados se mostrarán una vez que la competencia haya finalizado.
+        </p>
+        
+        <div style="display: inline-flex; align-items: center; gap: 0.625rem; padding: 0.75rem 1rem; background: var(--bg-white); border-radius: var(--radius-sm); border: 1px solid var(--border); box-shadow: var(--shadow-sm);">
+            <i class="bi-people" style="color: var(--primary); font-size: 1.125rem;"></i>
+            <div style="text-align: left;">
+                <div class="stats-label" style="margin-bottom: 0.125rem;">Equipos Participantes</div>
+                <div style="font-size: 1.375rem; font-weight: 700; color: var(--text-primary);">{{ total_equipos }}</div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Filtros de Ordenamiento -->
+{% else %}
+
+<!-- Resultados Finales -->
+<div class="card mb-4" style="border-left: 4px solid var(--success);">
+    <div class="card-body" style="padding: 1rem 1.5rem;">
+        <div style="display: flex; align-items: center; gap: 0.625rem;">
+            <i class="bi-check-circle-fill" style="color: var(--success); font-size: 1.125rem;"></i>
+            <h6 style="margin: 0; font-weight: 600; color: var(--text-primary); font-size: 0.938rem;">
+                Resultados Oficiales - Competencia Finalizada
+            </h6>
+        </div>
+    </div>
+</div>
+
 {% if equipos %}
-<div class="card mb-4">
-    <div class="card-body">
-        <div class="row align-items-center">
-            <div class="col-12 col-md-4 mb-3 mb-md-0">
-                <h6 class="mb-0" style="font-size: 0.875rem; font-weight: 500;">
-                    <i class="bi-funnel"></i> Ordenar por
-                </h6>
-            </div>
-            <div class="col-12 col-md-8">
-                <div class="btn-group w-100">
-                    <a href="?orden=mejor_tiempo{% if request.GET.orden == 'mejor_tiempo' and request.GET.dir == 'asc' %}&dir=desc{% else %}&dir=asc{% endif %}" 
-                       class="btn btn-sm {% if request.GET.orden == 'mejor_tiempo' or not request.GET.orden %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                        <i class="bi-award"></i> Mejor
-                        {% if request.GET.orden == 'mejor_tiempo' or not request.GET.orden %}
-                            <i class="{% if request.GET.dir == 'desc' %}bi-sort-down{% else %}bi-sort-up{% endif %}"></i>
-                        {% endif %}
-                    </a>
-                    
-                    <a href="?orden=tiempo_total{% if request.GET.orden == 'tiempo_total' and request.GET.dir == 'asc' %}&dir=desc{% else %}&dir=asc{% endif %}" 
-                       class="btn btn-sm {% if request.GET.orden == 'tiempo_total' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                        <i class="bi-hourglass"></i> Total
-                        {% if request.GET.orden == 'tiempo_total' %}
-                            <i class="{% if request.GET.dir == 'desc' %}bi-sort-down{% else %}bi-sort-up{% endif %}"></i>
-                        {% endif %}
-                    </a>
-                    
-                    <a href="?orden=promedio{% if request.GET.orden == 'promedio' and request.GET.dir == 'asc' %}&dir=desc{% else %}&dir=asc{% endif %}" 
-                       class="btn btn-sm {% if request.GET.orden == 'promedio' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                        <i class="bi-speedometer2"></i> Promedio
-                        {% if request.GET.orden == 'promedio' %}
-                            <i class="{% if request.GET.dir == 'desc' %}bi-sort-down{% else %}bi-sort-up{% endif %}"></i>
-                        {% endif %}
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Resultados por Equipo -->
-<div class="row g-4">
+<!-- Listado de Equipos -->
+<div style="display: flex; flex-direction: column; gap: 0.875rem;">
     {% for equipo in equipos %}
-    <div class="col-12">
-        <div class="card team-card">
-            <div class="card-body">
-                <div class="row align-items-center">
-                    <!-- Nombre del equipo -->
-                    <div class="col-12 col-md-4 mb-3 mb-md-0">
-                        <div class="d-flex align-items-center gap-2 mb-2">
-                            <span class="badge bg-dark" style="font-size: 0.875rem; padding: 0.375rem 0.625rem;">
-                                {{ equipo.number }}
+    <div class="card team-card {% if equipo.descalificado %}disqualified{% else %}qualified rank-{{ equipo.posicion }}{% endif %}">
+        <div class="card-body" style="position: relative; padding: 1.25rem;">
+            
+            <!-- Badge de Posición -->
+            {% if not equipo.descalificado %}
+                <div class="position-badge {% if equipo.posicion == 1 %}gold{% elif equipo.posicion == 2 %}silver{% elif equipo.posicion == 3 %}bronze{% else %}regular{% endif %}">
+                    {% if equipo.posicion == 1 %}🥇{% elif equipo.posicion == 2 %}🥈{% elif equipo.posicion == 3 %}🥉{% else %}{{ equipo.posicion }}{% endif %}
+                </div>
+            {% endif %}
+
+            <div style="display: grid; grid-template-columns: 1fr auto; gap: 1.5rem; align-items: center; margin-left: {% if not equipo.descalificado %}52px{% else %}0{% endif %};">
+                
+                <!-- Información del Equipo -->
+                <div>
+                    <div style="display: flex; align-items: center; gap: 0.625rem; margin-bottom: 0.625rem;">
+                        <span class="badge badge-secondary" style="font-size: 0.875rem; padding: 0.375rem 0.75rem;">
+                            #{{ equipo.number }}
+                        </span>
+                        <h4 style="margin: 0; font-size: 1.125rem; font-weight: 700;">
+                            {{ equipo.name }}
+                        </h4>
+                        {% if equipo.descalificado %}
+                            <span class="badge badge-danger" style="font-size: 0.75rem;">
+                                ❌ DESCALIFICADO
                             </span>
-                            <h5 class="mb-0" style="font-size: 1.063rem;">{{ equipo.name }}</h5>
-                        </div>
-                        <div class="info-chip" style="display: inline-flex;">
-                            <i class="bi-person-badge"></i>
-                            {{ equipo.judge.get_full_name|default:equipo.judge.username }}
-                        </div>
+                        {% endif %}
                     </div>
                     
-                    <!-- Estadísticas -->
-                    <div class="col-12 col-md-8">
-                        <div class="row text-center g-3">
-                            <div class="col-6 col-lg-3">
-                                <div class="stats-box">
-                                    <div class="stats-label">Mejor</div>
-                                    {% if equipo.prefetched_tiempos %}
-                                        <div class="stats-value text-success">
-                                            {{ equipo.prefetched_tiempos.0.hours }}h 
-                                            {{ equipo.prefetched_tiempos.0.minutes }}m 
-                                            {{ equipo.prefetched_tiempos.0.seconds }}s
-                                        </div>
-                                    {% else %}
-                                        <div class="stats-value text-muted">--</div>
-                                    {% endif %}
-                                </div>
+                    <div style="display: flex; gap: 0.875rem; flex-wrap: wrap;">
+                        <div style="display: flex; align-items: center; gap: 0.375rem; color: var(--text-secondary); font-size: 0.813rem;">
+                            <i class="bi-person-badge"></i>
+                            <span>{{ equipo.judge.get_full_name|default:equipo.judge.username }}</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.375rem; color: var(--text-secondary); font-size: 0.813rem;">
+                            <i class="bi-people"></i>
+                            <span>{{ equipo.jugadores_completados }}/{{ equipo.num_registros }} jugadores</span>
+                        </div>
+                        {% if equipo.descalificado %}
+                            <div style="display: flex; align-items: center; gap: 0.375rem; color: var(--danger); font-size: 0.813rem; font-weight: 600;">
+                                <i class="bi-clock"></i>
+                                <span>{{ equipo.jugadores_ausentes }} ausente{{ equipo.jugadores_ausentes|pluralize }}</span>
                             </div>
-                            <div class="col-6 col-lg-3">
-                                <div class="stats-box">
-                                    <div class="stats-label">Registros</div>
-                                    <div class="stats-value">{{ equipo.num_registros }}</div>
-                                </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Estadísticas -->
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.875rem; min-width: 220px;">
+                    <div class="stats-box" style="padding: 0.75rem; background: linear-gradient(135deg, #fffbeb 0%, #ffffff 100%); border-color: var(--warning);">
+                        <div class="stats-label">⚡ Mejor</div>
+                        {% if equipo.mejor_tiempo_ms > 0 %}
+                            <div class="stats-value text-warning" style="font-size: 0.938rem;">
+                                {{ equipo.mejor_tiempo_formateado }}
                             </div>
-                            <div class="col-6 col-lg-3">
-                                <div class="stats-box">
-                                    <div class="stats-label">Promedio</div>
-                                    {% if equipo.tiempo_promedio > 0 %}
-                                        <div class="stats-value">
-                                            {{ equipo.tiempo_promedio|format_time_readable }}
-                                        </div>
-                                    {% else %}
-                                        <div class="stats-value text-muted">--</div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            <div class="col-6 col-lg-3">
-                                <div class="stats-box">
-                                    <div class="stats-label">Total</div>
-                                    <div class="stats-value">{{ equipo.tiempo_total_formateado }}</div>
-                                </div>
-                            </div>
+                        {% else %}
+                            <div class="stats-value text-muted" style="font-size: 0.938rem;">--</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="stats-box" style="padding: 0.75rem; background: linear-gradient(135deg, #dbeafe 0%, #ffffff 100%); border-color: var(--primary); border-width: 2px;">
+                        <div class="stats-label">🏁 Total</div>
+                        <div class="stats-value" style="color: var(--primary); font-size: 0.938rem;">
+                            {{ equipo.tiempo_total_formateado }}
                         </div>
                     </div>
                 </div>
             </div>
+
         </div>
     </div>
     {% endfor %}
@@ -170,16 +187,18 @@
 {% else %}
 <div class="card">
     <div class="card-body">
-        <div class="empty-state">
-            <i class="bi-people"></i>
-            <h3>No hay equipos registrados</h3>
-            <p class="text-muted">Los equipos aparecerán aquí cuando sean asignados</p>
+        <div style="text-align: center; padding: 2.5rem 2rem;">
+            <i class="bi-people" style="font-size: 3rem; color: var(--text-muted); opacity: 0.5; margin-bottom: 1rem;"></i>
+            <h3 style="color: var(--text-secondary); font-weight: 600; font-size: 1.125rem; margin-bottom: 0.5rem;">No hay equipos registrados</h3>
+            <p class="text-muted" style="font-size: 0.875rem;">Los equipos aparecerán aquí cuando sean asignados</p>
         </div>
     </div>
 </div>
 {% endif %}
 
-<div class="mt-4">
+{% endif %}
+
+<div style="margin-top: 1.5rem;">
     <a href="{% url 'ui:competencia_list' %}" class="btn btn-secondary">
         <i class="bi-arrow-left"></i> Volver
     </a>
