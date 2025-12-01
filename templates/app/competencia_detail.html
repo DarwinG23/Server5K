@@ -131,13 +131,13 @@
 <div style="display: flex; flex-direction: column; gap: 0.875rem;">
     {% for equipo in equipos %}
     <a href="{% url 'ui:equipo_detail' equipo.pk %}" class="team-card-link" style="text-decoration: none; color: inherit;">
-        <div class="card team-card {% if equipo.descalificado %}disqualified{% else %}qualified rank-{{ equipo.posicion }}{% endif %}" style="transition: transform 0.2s, box-shadow 0.2s; cursor: pointer;">
+        <div class="card team-card {% if equipo.descalificado %}disqualified{% else %}qualified{% if equipo.posicion and equipo.posicion <= 2 %} rank-{{ equipo.posicion }}{% endif %}{% endif %}" style="transition: transform 0.2s, box-shadow 0.2s; cursor: pointer;">
             <div class="card-body" style="position: relative; padding: 1.25rem;">
                 
                 <!-- Badge de Posición -->
                 {% if not equipo.descalificado %}
-                    <div class="position-badge {% if equipo.posicion == 1 %}gold{% elif equipo.posicion == 2 %}silver{% elif equipo.posicion == 3 %}bronze{% else %}regular{% endif %}">
-                        {% if equipo.posicion == 1 %}🥇{% elif equipo.posicion == 2 %}🥈{% elif equipo.posicion == 3 %}🥉{% else %}{{ equipo.posicion }}{% endif %}
+                    <div class="position-badge {% if equipo.posicion == 1 %}gold{% elif equipo.posicion == 2 %}silver{% else %}regular{% endif %}">
+                        {% if equipo.posicion == 1 %}🥇{% elif equipo.posicion == 2 %}🥈{% else %}{{ equipo.posicion }}{% endif %}
                     </div>
                 {% endif %}
 
