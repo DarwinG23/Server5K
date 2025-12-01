@@ -1,0 +1,122 @@
+======================================================================
+CREDENCIALES DE ACCESO - SISTEMA 5K
+Generado: 26/11/2025 17:08:37
+Competencia: 5K Badajoz 2025
+======================================================================
+
+JUEZ #01
+  Nombre: Esther Carrasco
+  Usuario: juez1
+  Email: chelo29@example.net
+  Contraseña: juez1123
+----------------------------------------------------------------------
+
+JUEZ #02
+  Nombre: Úrsula Feliu
+  Usuario: juez2
+  Email: hruiz@example.org
+  Contraseña: juez2123
+----------------------------------------------------------------------
+
+JUEZ #03
+  Nombre: Belen Ugarte
+  Usuario: juez3
+  Email: mauricio72@example.com
+  Contraseña: juez3123
+----------------------------------------------------------------------
+
+JUEZ #04
+  Nombre: Mamen Rico
+  Usuario: juez4
+  Email: codinaandrea@example.net
+  Contraseña: juez4123
+----------------------------------------------------------------------
+
+JUEZ #05
+  Nombre: María Manuela Carvajal
+  Usuario: juez5
+  Email: primitivaquero@example.com
+  Contraseña: juez5123
+----------------------------------------------------------------------
+
+JUEZ #06
+  Nombre: Adrián Sanz
+  Usuario: juez6
+  Email: jordisarabia@example.org
+  Contraseña: juez6123
+----------------------------------------------------------------------
+
+JUEZ #07
+  Nombre: Edgardo Ros
+  Usuario: juez7
+  Email: ycobo@example.com
+  Contraseña: juez7123
+----------------------------------------------------------------------
+
+JUEZ #08
+  Nombre: Marcelino Peiró
+  Usuario: juez8
+  Email: felipa97@example.net
+  Contraseña: juez8123
+----------------------------------------------------------------------
+
+JUEZ #09
+  Nombre: Reyes Páez
+  Usuario: juez9
+  Email: martorellbalduino@example.net
+  Contraseña: juez9123
+----------------------------------------------------------------------
+
+JUEZ #10
+  Nombre: Yésica Cabrera
+  Usuario: juez10
+  Email: zmoran@example.org
+  Contraseña: juez10123
+----------------------------------------------------------------------
+
+JUEZ #11
+  Nombre: Apolonia Escudero
+  Usuario: juez11
+  Email: chucho97@example.com
+  Contraseña: juez11123
+----------------------------------------------------------------------
+
+JUEZ #12
+  Nombre: Eusebio Samper
+  Usuario: juez12
+  Email: guadalupelopez@example.net
+  Contraseña: juez12123
+----------------------------------------------------------------------
+
+JUEZ #13
+  Nombre: Joaquina Perez
+  Usuario: juez13
+  Email: martiriocadenas@example.com
+  Contraseña: juez13123
+----------------------------------------------------------------------
+
+JUEZ #14
+  Nombre: Esteban Alcalá
+  Usuario: juez14
+  Email: kbravo@example.net
+  Contraseña: juez14123
+----------------------------------------------------------------------
+
+JUEZ #15
+  Nombre: Reina Vall
+  Usuario: juez15
+  Email: teofila66@example.org
+  Contraseña: juez15123
+----------------------------------------------------------------------
+
+JUEZ #16
+  Nombre: Amor Tirado
+  Usuario: juez16
+  Email: ana-sofiarodrigo@example.net
+  Contraseña: juez16123
+----------------------------------------------------------------------
+
+======================================================================
+NOTA: Estas credenciales son solo para desarrollo/pruebas.
+En producción, use contraseñas seguras y únicas.
+======================================================================

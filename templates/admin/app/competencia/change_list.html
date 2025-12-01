@@ -1,0 +1,82 @@
+{% extends "admin/change_list.html" %}
+{% load static %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+    .cronometro-inline {
+        font-family: 'Courier New', monospace;
+        font-size: 16px;
+        font-weight: bold;
+        color: #28a745;
+        background: #f0f0f0;
+        padding: 4px 10px;
+        border-radius: 5px;
+        min-width: 100px;
+        text-align: center;
+        display: inline-block;
+        animation: pulse-timer 2s infinite;
+    }
+    
+    @keyframes pulse-timer {
+        0%, 100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.7;
+        }
+    }
+</style>
+
+<script>
+(function() {
+    // Función para formatear tiempo
+    function formatTime(milliseconds) {
+        const hours = Math.floor(milliseconds / 3600000);
+        const minutes = Math.floor((milliseconds % 3600000) / 60000);
+        const seconds = Math.floor((milliseconds % 60000) / 1000);
+        
+        return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+    
+    // Función para actualizar todos los cronómetros inline
+    function actualizarCronometros() {
+        const cronometros = document.querySelectorAll('.cronometro-inline');
+        const ahora = new Date();
+        
+        cronometros.forEach(function(elem) {
+            const startedAt = elem.getAttribute('data-started-at');
+            if (startedAt) {
+                const inicio = new Date(startedAt);
+                const elapsed = ahora - inicio;
+                elem.textContent = formatTime(elapsed);
+            }
+        });
+    }
+    
+    // Función para verificar y actualizar estado cada 2 segundos
+    function verificarEstado() {
+        fetch('/api/admin/estado-competencias/')
+            .then(response => response.json())
+            .then(data => {
+                // La página se recargará automáticamente si hay cambios de estado
+                // mediante los botones de iniciar/detener
+            })
+            .catch(error => {
+                console.error('Error verificando estado:', error);
+            });
+    }
+    
+    // Iniciar actualización cada 100ms para precisión del cronómetro
+    setInterval(actualizarCronometros, 100);
+    
+    // Verificar estado cada 2 segundos
+    setInterval(verificarEstado, 2000);
+    
+    // Actualizar inmediatamente al cargar
+    document.addEventListener('DOMContentLoaded', function() {
+        actualizarCronometros();
+    });
+})();
+</script>
+{% endblock %}
