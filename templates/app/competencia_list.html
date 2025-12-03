@@ -24,13 +24,17 @@
                     <h5 style="font-size: 1.125rem; font-weight: 700; margin: 0; letter-spacing: -0.02em; flex: 1;">
                         {{ competencia.name }}
                     </h5>
-                    {% if competencia.is_running %}
+                    {% if competencia.get_status_code == 'running' %}
                         <span class="badge badge-success">
-                            <i class="bi-play-circle-fill"></i> En curso
+                            <i class="bi-play-circle-fill"></i> En Curso
                         </span>
-                    {% else %}
+                    {% elif competencia.get_status_code == 'finished' %}
                         <span class="badge badge-secondary">
                             <i class="bi-check-circle-fill"></i> Finalizada
+                        </span>
+                    {% else %}
+                        <span class="badge badge-info">
+                            <i class="bi-calendar-event"></i> Programada
                         </span>
                     {% endif %}
                 </div>

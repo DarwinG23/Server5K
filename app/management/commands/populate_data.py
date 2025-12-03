@@ -6,7 +6,7 @@ import os
 from app.models import Competencia, Juez, Equipo
 
 class Command(BaseCommand):
-    help = 'Genera datos de prueba: 1 competencia, 16 jueces y equipos usando Faker'
+    help = 'Genera datos de prueba: 1 competencia, 50 jueces y equipos usando Faker'
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -35,21 +35,26 @@ class Command(BaseCommand):
         )
         self.stdout.write(self.style.SUCCESS(f'✓ Competencia creada: {competencia.name}'))
         
-        # Crear 16 jueces
-        self.stdout.write('\nCreando 16 jueces...')
+        # Crear 50 jueces
+        self.stdout.write('\nCreando 50 jueces...')
         jueces_creados = []
         credenciales = []  # Lista para guardar credenciales
         
-        for i in range(1, 17):
+        for i in range(1, 51):
             first_name = fake.first_name()
             last_name = fake.last_name()
             username = f"juez{i}"
+            
+            # Generar email basado en nombre: nombre.apellido@gmail.com
+            nombre_limpio = first_name.lower().replace(' ', '').replace('á', 'a').replace('é', 'e').replace('í', 'i').replace('ó', 'o').replace('ú', 'u').replace('ñ', 'n')
+            apellido_limpio = last_name.split()[0].lower().replace('á', 'a').replace('é', 'e').replace('í', 'i').replace('ó', 'o').replace('ú', 'u').replace('ñ', 'n')
+            email = f"{nombre_limpio}.{apellido_limpio}@gmail.com"
             
             juez = Juez.objects.create(
                 username=username,
                 first_name=first_name,
                 last_name=last_name,
-                email=fake.email(),
+                email=email,
                 is_active=True
             )
             
@@ -68,17 +73,21 @@ class Command(BaseCommand):
             })
             
             jueces_creados.append(juez)
-            self.stdout.write(self.style.SUCCESS(f'  ✓ Juez {i}/16: {juez.get_full_name()} (@{username})'))
+            self.stdout.write(self.style.SUCCESS(f'  ✓ Juez {i}/50: {juez.get_full_name()} (@{username})'))
         
         # Crear equipos (1 equipo por juez)
         self.stdout.write('\nCreando equipos...')
         nombres_equipos = [
-            'Los Veloces', 'Corredores Unidos', 'Team Thunder',
-            'Atletas Elite', 'Racing Crew', 'Speed Masters',
-            'Los Invencibles', 'Running Stars', 'Team Phoenix',
-            'Campeones 5K', 'Relámpagos FC', 'Halcones Rápidos',
-            'Águilas Corredoras', 'Titanes del Asfalto', 'Fénix Runners',
-            'Centauros Veloces'
+            'Los Veloces', 'Corredores Unidos', 'Team Thunder', 'Atletas Elite', 'Racing Crew',
+            'Speed Masters', 'Los Invencibles', 'Running Stars', 'Team Phoenix', 'Campeones 5K',
+            'Relámpagos FC', 'Halcones Rápidos', 'Águilas Corredoras', 'Titanes del Asfalto', 'Fénix Runners',
+            'Centauros Veloces', 'Los Imparables', 'Gacelas Urbanas', 'Team Rocket', 'Sprint Kings',
+            'Maratonistas Pro', 'Runners Elite', 'Los Meteoros', 'Flash Team', 'Tornado Runners',
+            'Los Gladiadores', 'Panteras Negras', 'Team Pegasus', 'Los Campeones', 'Ultra Runners',
+            'Los Guerreros', 'Team Infinity', 'Correcaminos FC', 'Los Titanes', 'Águilas Doradas',
+            'Team Vortex', 'Los Dragones', 'Rayos del Norte', 'Storm Runners', 'Los Vikingos',
+            'Team Alpha', 'Los Spartanos', 'Jaguar Racing', 'Team Omega', 'Los Leones',
+            'Cobra Team', 'Los Pumas', 'Tiger Runners', 'Team Delta', 'Los Halcones'
         ]
         
         for i, juez in enumerate(jueces_creados, start=1):
@@ -93,7 +102,7 @@ class Command(BaseCommand):
                 judge=juez
             )
             
-            self.stdout.write(self.style.SUCCESS(f'  ✓ Equipo {i}/16: {equipo.name} (Dorsal {dorsal}) - Juez: {juez.get_full_name()}'))
+            self.stdout.write(self.style.SUCCESS(f'  ✓ Equipo {i}/50: {equipo.name} (Dorsal {dorsal}) - Juez: {juez.get_full_name()}'))
         
         # Resumen
         self.stdout.write(self.style.SUCCESS('\n' + '='*60))
@@ -133,5 +142,5 @@ class Command(BaseCommand):
         
         self.stdout.write(self.style.SUCCESS('\n✓ Datos generados exitosamente!'))
         self.stdout.write(self.style.WARNING('\nCredenciales de acceso guardadas en: credenciales_jueces.txt'))
-        self.stdout.write('  Usuario: juez1, juez2, ..., juez16')
-        self.stdout.write('  Contraseña: juez1123, juez2123, ..., juez16123')
+        self.stdout.write('  Usuario: juez1, juez2, ..., juez50')
+        self.stdout.write('  Contraseña: juez1123, juez2123, ..., juez50123')

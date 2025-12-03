@@ -341,6 +341,12 @@ body {
     border: 1px solid var(--border);
 }
 
+.badge-info {
+    background: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #3b82f6;
+}
+
 .badge.large {
     padding: 0.5rem 1rem;
     font-size: 0.938rem;
@@ -449,3 +455,138 @@ body {
         padding-top: 3.5rem !important;
     }
 }
+
+/* ====================================
+   PODIO COMPACTO - 1° Y 2° LUGAR
+   ==================================== */
+
+.podium-header {
+    background: linear-gradient(135deg, var(--bg-light) 0%, var(--bg-white) 100%);
+    padding: 0.875rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.podium-compact {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+.podium-card-compact {
+    position: relative;
+    background: var(--bg-white);
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 1rem;
+    text-align: center;
+    transition: all 0.3s;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.podium-card-compact:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+}
+
+.podium-card-compact.podium-gold {
+    border-color: var(--gold);
+    background: linear-gradient(135deg, #fffbeb 0%, #ffffff 100%);
+}
+
+.podium-card-compact.podium-silver {
+    border-color: var(--silver);
+    background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+}
+
+.podium-card-compact.podium-empty {
+    border: 2px dashed var(--border);
+    background: var(--bg-light);
+    opacity: 0.6;
+    cursor: default;
+}
+
+.podium-card-compact.podium-empty:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+.podium-medal {
+    font-size: 2.5rem;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+}
+
+.podium-rank-badge {
+    position: absolute;
+    top: 0.75rem;
+    left: 0.75rem;
+    background: rgba(0, 0, 0, 0.75);
+    color: white;
+    font-weight: 700;
+    padding: 0.25rem 0.625rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+}
+
+.podium-content {
+    width: 100%;
+}
+
+.podium-dorsal-compact {
+    background: var(--bg-light);
+    color: var(--primary);
+    font-weight: 700;
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    display: inline-block;
+    margin-bottom: 0.5rem;
+    border: 1px solid var(--border);
+}
+
+.podium-name-compact {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 0.375rem;
+    color: var(--text-primary);
+}
+
+.podium-category-compact {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.625rem;
+}
+
+.podium-time-compact {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--primary);
+    font-family: 'Courier New', monospace;
+    letter-spacing: -0.02em;
+}
+
+.podium-empty-text {
+    color: var(--text-muted);
+    font-size: 0.813rem;
+    line-height: 1.4;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .podium-compact {
+        grid-template-columns: 1fr;
+    }
+    
+    .podium-medal {
+        font-size: 2rem;
+    }
+    
+    .podium-time-compact {
+        font-size: 1.125rem;
+    }
+}
+
