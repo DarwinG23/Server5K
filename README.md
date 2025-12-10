@@ -73,10 +73,42 @@ docker compose logs -f web
 docker compose exec web python manage.py createsuperuser
 ```
 
-### 4. Cargar Datos de Prueba (Opcional)
+### 4. Crear Competencia, Jueces y Equipos
+
+El comando `populate_data` crea los datos iniciales necesarios para la competencia:
 
 ```bash
+# DESARROLLO: Crea 50 jueces con contraseñas simples (juez1123, juez2123, etc.)
 docker compose exec web python manage.py populate_data
+
+# PRODUCCIÓN: Crea jueces con contraseñas seguras aleatorias
+docker compose exec web python manage.py populate_data --production
+
+# Personalizado: 20 jueces con nombre de competencia específico
+docker compose exec web python manage.py populate_data --production --jueces 20 --competencia "5K UNL 2025"
+
+# Limpiar y recrear todo (¡CUIDADO! Elimina datos existentes)
+docker compose exec web python manage.py populate_data --clear --production --jueces 30
+```
+
+**Opciones disponibles:**
+
+| Opción                   | Descripción                                                             |
+| ------------------------ | ----------------------------------------------------------------------- |
+| `--production`           | Genera contraseñas seguras aleatorias (12 caracteres)                   |
+| `--jueces N`             | Número de jueces/equipos a crear (default: 50, máx: 100)                |
+| `--competencia "NOMBRE"` | Nombre personalizado para la competencia                                |
+| `--password BASE`        | Contraseña base en desarrollo (ej: `--password pass` → pass1, pass2...) |
+| `--clear`                | Elimina todos los datos antes de crear nuevos                           |
+
+**⚠️ IMPORTANTE**: El comando genera un archivo `credenciales_jueces.txt` con todas las contraseñas.
+
+```bash
+# Ver las credenciales generadas
+docker compose exec web cat credenciales_jueces.txt
+
+# Copiar el archivo a tu máquina local
+docker cp server5k-web:/app/credenciales_jueces.txt ./credenciales_jueces.txt
 ```
 
 ### 5. Verificar que todo funciona
