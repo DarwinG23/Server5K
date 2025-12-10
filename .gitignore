@@ -56,6 +56,7 @@ Thumbs.db
 # ---- Additional recommended ignores ----
 # dotenv file (single-file env) - keep secrets out of repo
 .env
+!.env.example
 
 # Cache / build / local state
 .cache/
@@ -82,3 +83,13 @@ celerybeat.pid
 # Secrets or dotenv variants
 .env.local
 .env.*.local
+
+# Test files (no subir a producción)
+test_*.py
+test_*.html
+
+# Archivos de base de datos local
+*.sqlite3
+
+# Scripts locales de desarrollo
+start_server*.ps1
