@@ -13,9 +13,12 @@ services:
   # Servicio Web (Django + Daphne ASGI)
   # ==========================================================================
   web:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    # Para usar imagen de Docker Hub (recomendado):
+    image: axlmd/server5k:latest
+    # Para construir localmente (desarrollo), comenta la línea anterior y descomenta estas:
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
     container_name: server5k-web
     restart: unless-stopped
     env_file:
