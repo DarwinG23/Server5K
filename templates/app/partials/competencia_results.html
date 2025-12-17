@@ -71,98 +71,409 @@
 
 <!-- Listado de Equipos - Desde el 3er lugar -->
 {% if equipos|length > 2 %}
-<div style="display: flex; flex-direction: column; gap: 0.875rem;">
+<div class="team-list">
     {% for equipo in equipos %}
         {% if equipo.posicion > 2 or equipo.descalificado %}
-        <a href="{% url 'ui:equipo_detail' equipo.pk %}" class="team-card-link" style="text-decoration: none; color: inherit;">
-            <div class="card team-card {% if equipo.descalificado %}disqualified{% else %}qualified{% endif %}" style="transition: box-shadow 0.2s; cursor: pointer;">
-                <div class="card-body" style="position: relative; padding: 1.25rem;">
-                    
-                    <!-- Badge de Posición (solo para calificados) -->
-                    {% if not equipo.descalificado %}
-                        <div class="position-badge regular">
-                            {{ equipo.posicion }}
-                        </div>
+        <a href="{% url 'ui:equipo_detail' equipo.pk %}" class="team-card-v2 {% if equipo.descalificado %}team-card-disqualified{% endif %}">
+            
+            <!-- Posición -->
+            <div class="team-position {% if equipo.descalificado %}team-position-dq{% endif %}">
+                {% if equipo.descalificado %}
+                    <i class="bi-x-lg"></i>
+                {% else %}
+                    {{ equipo.posicion }}
+                {% endif %}
+            </div>
+
+            <!-- Info Principal -->
+            <div class="team-main">
+                <div class="team-header">
+                    <h4 class="team-name">{{ equipo.name }}</h4>
+                    {% if equipo.descalificado %}
+                        <span class="team-dq-badge">DESCALIFICADO</span>
                     {% endif %}
-
-                    <div style="display: grid; grid-template-columns: 1fr auto; gap: 1.5rem; align-items: center; margin-left: {% if not equipo.descalificado %}52px{% else %}0{% endif %};">
-                        
-                        <!-- Información del Equipo -->
-                        <div>
-                            <div style="display: flex; align-items: center; gap: 0.625rem; margin-bottom: 0.625rem;">
-                                <span class="badge badge-secondary" style="font-size: 0.875rem; padding: 0.375rem 0.75rem;">
-                                    #{{ equipo.number }}
-                                </span>
-                                <h4 style="margin: 0; font-size: 1.125rem; font-weight: 700;">
-                                    {{ equipo.name }}
-                                </h4>
-                                {% if equipo.descalificado %}
-                                    <span class="badge badge-danger" style="font-size: 0.75rem;">
-                                        <i class="bi-x-circle-fill"></i> DESCALIFICADO
-                                    </span>
-                                {% endif %}
-                            </div>
-                            
-                            <div style="display: flex; gap: 0.875rem; flex-wrap: wrap;">
-                                <div style="display: flex; align-items: center; gap: 0.375rem; color: var(--text-secondary); font-size: 0.813rem;">
-                                    <i class="bi-tag"></i>
-                                    <span>{{ equipo.get_category_display }}</span>
-                                </div>
-                                <div style="display: flex; align-items: center; gap: 0.375rem; color: var(--text-secondary); font-size: 0.813rem;">
-                                    <i class="bi-person-badge"></i>
-                                    <span>{{ equipo.judge.get_full_name|default:equipo.judge.username }}</span>
-                                </div>
-                                <div style="display: flex; align-items: center; gap: 0.375rem; color: var(--text-secondary); font-size: 0.813rem;">
-                                    <i class="bi-people"></i>
-                                    <span>{{ equipo.jugadores_completados }}/{{ equipo.num_registros }} jugadores</span>
-                                </div>
-                                {% if equipo.descalificado %}
-                                    <div style="display: flex; align-items: center; gap: 0.375rem; color: var(--danger); font-size: 0.813rem; font-weight: 600;">
-                                        <i class="bi-clock"></i>
-                                        <span>{{ equipo.jugadores_ausentes }} ausente{{ equipo.jugadores_ausentes|pluralize }}</span>
-                                    </div>
-                                {% endif %}
-                            </div>
-                        </div>
-
-                        <!-- Estadísticas -->
-                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.875rem; min-width: 220px;">
-                            <div class="stats-box" style="padding: 0.75rem;">
-                                <div class="stats-label"><i class="bi-lightning-charge"></i> Mejor</div>
-                                {% if equipo.mejor_tiempo_ms > 0 %}
-                                    <div class="stats-value text-warning" style="font-size: 0.938rem;">
-                                        {{ equipo.mejor_tiempo_formateado }}
-                                    </div>
-                                {% else %}
-                                    <div class="stats-value text-muted" style="font-size: 0.938rem;">--</div>
-                                {% endif %}
-                            </div>
-                            
-                            <div class="stats-box" style="padding: 0.75rem;">
-                                <div class="stats-label"><i class="bi-stopwatch"></i> Total</div>
-                                <div class="stats-value" style="color: var(--primary); font-size: 0.938rem;">
-                                    {{ equipo.tiempo_total_formateado }}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Indicador de click -->
-                    <div style="position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted);">
-                        <i class="bi-chevron-right"></i>
-                    </div>
-
+                </div>
+                <div class="team-meta">
+                    <span class="team-dorsal-mobile">#{{ equipo.number }}</span>
+                    <span class="team-category">
+                        <i class="bi-bookmark-fill"></i>
+                        {{ equipo.get_category_display }}
+                    </span>
+                    <span class="team-players">
+                        <i class="bi-people-fill"></i>
+                        {{ equipo.jugadores_completados }}/{{ equipo.num_registros }}
+                    </span>
+                    {% if equipo.descalificado and equipo.jugadores_ausentes > 0 %}
+                        <span class="team-absent">
+                            <i class="bi-person-x-fill"></i>
+                            {{ equipo.jugadores_ausentes }} ausente{{ equipo.jugadores_ausentes|pluralize }}
+                        </span>
+                    {% endif %}
                 </div>
             </div>
+
+            <!-- Dorsal -->
+            <div class="team-dorsal">
+                <span class="dorsal-label">DORSAL</span>
+                <span class="dorsal-number">#{{ equipo.number }}</span>
+            </div>
+
+            <!-- Tiempos -->
+            <div class="team-times">
+                <div class="time-block time-best">
+                    <span class="time-label">MEJOR</span>
+                    {% if equipo.mejor_tiempo_ms > 0 %}
+                        <span class="time-value">{{ equipo.mejor_tiempo_formateado }}</span>
+                    {% else %}
+                        <span class="time-value time-empty">--:--</span>
+                    {% endif %}
+                </div>
+                <div class="time-block time-total">
+                    <span class="time-label">TOTAL</span>
+                    <span class="time-value">{{ equipo.tiempo_total_formateado }}</span>
+                </div>
+            </div>
+
+            <!-- Chevron -->
+            <div class="team-arrow">
+                <i class="bi-chevron-right"></i>
+            </div>
+
         </a>
         {% endif %}
     {% endfor %}
 </div>
 
 <style>
-    .team-card-link:hover .team-card {
-        box-shadow: var(--shadow-md);
+/* ====================================
+   TEAM CARDS V2 - DISEÑO ELEGANTE
+   ==================================== */
+.team-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.team-card-v2 {
+    display: grid;
+    grid-template-columns: 52px 1fr auto auto 24px;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    background: var(--bg-white);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.team-card-v2:hover {
+    border-color: var(--primary);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.12);
+    transform: translateY(-1px);
+}
+
+.team-card-disqualified {
+    background: linear-gradient(135deg, #fef2f2 0%, #fff 100%);
+    border-color: #fecaca;
+    opacity: 0.9;
+}
+
+.team-card-disqualified:hover {
+    border-color: var(--danger);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.12);
+}
+
+/* Posición */
+.team-position {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 1.25rem;
+    color: var(--text-primary);
+    flex-shrink: 0;
+}
+
+.team-position-dq {
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+    border-color: #fca5a5;
+    color: var(--danger);
+}
+
+/* Info Principal */
+.team-main {
+    min-width: 0;
+    flex: 1;
+}
+
+.team-header {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    margin-bottom: 0.375rem;
+    flex-wrap: wrap;
+}
+
+.team-name {
+    margin: 0;
+    font-size: 1.0625rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.team-dq-badge {
+    background: var(--danger);
+    color: white;
+    font-size: 0.625rem;
+    font-weight: 700;
+    padding: 0.125rem 0.5rem;
+    border-radius: 4px;
+    letter-spacing: 0.03em;
+    flex-shrink: 0;
+}
+
+.team-meta {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.team-category {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    background: linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%);
+    color: #1e40af;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.25rem 0.625rem;
+    border-radius: 6px;
+    border: 1px solid #bfdbfe;
+    letter-spacing: 0.01em;
+}
+
+.team-category i {
+    font-size: 0.625rem;
+}
+
+.team-players {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: var(--text-secondary);
+    font-size: 0.8125rem;
+    font-weight: 500;
+}
+
+.team-absent {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: var(--danger);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* Dorsal Mobile (oculto en desktop) */
+.team-dorsal-mobile {
+    display: none;
+    align-items: center;
+    background: #1e293b;
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.1875rem 0.5rem;
+    border-radius: 4px;
+}
+
+/* Dorsal */
+.team-dorsal {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 0.875rem;
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    border-radius: 8px;
+    min-width: 70px;
+}
+
+.dorsal-label {
+    font-size: 0.5625rem;
+    font-weight: 600;
+    color: #94a3b8;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.125rem;
+}
+
+.dorsal-number {
+    font-size: 1.125rem;
+    font-weight: 800;
+    color: white;
+    letter-spacing: -0.02em;
+}
+
+/* Tiempos */
+.team-times {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.time-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    min-width: 80px;
+    text-align: center;
+}
+
+.time-best {
+    background: linear-gradient(135deg, #fef3c7 0%, #fffbeb 100%);
+    border: 1px solid #fcd34d;
+}
+
+.time-total {
+    background: linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%);
+    border: 1px solid #93c5fd;
+}
+
+.time-label {
+    font-size: 0.5625rem;
+    font-weight: 700;
+    color: #78716c;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.125rem;
+}
+
+.time-value {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+}
+
+.time-best .time-value {
+    color: #b45309;
+}
+
+.time-total .time-value {
+    color: #1d4ed8;
+}
+
+.time-empty {
+    color: var(--text-muted) !important;
+}
+
+/* Arrow */
+.team-arrow {
+    color: var(--text-muted);
+    font-size: 1rem;
+    transition: transform 0.2s;
+}
+
+.team-card-v2:hover .team-arrow {
+    transform: translateX(3px);
+    color: var(--primary);
+}
+
+/* ====================================
+   RESPONSIVE MÓVIL
+   ==================================== */
+@media (max-width: 768px) {
+    .team-card-v2 {
+        grid-template-columns: 44px 1fr;
+        grid-template-rows: auto auto auto;
+        gap: 0.625rem 0.75rem;
+        padding: 1rem;
     }
+
+    .team-position {
+        width: 44px;
+        height: 44px;
+        font-size: 1.125rem;
+        grid-row: span 2;
+    }
+
+    .team-main {
+        grid-column: 2;
+    }
+
+    .team-name {
+        font-size: 1rem;
+    }
+
+    .team-meta {
+        gap: 0.5rem;
+    }
+
+    .team-dorsal {
+        display: none;
+    }
+
+    .team-times {
+        grid-column: 1 / -1;
+        justify-content: stretch;
+    }
+
+    .time-block {
+        flex: 1;
+        padding: 0.625rem 0.5rem;
+    }
+
+    .time-value {
+        font-size: 0.875rem;
+    }
+
+    .team-arrow {
+        display: none;
+    }
+
+    /* Mostrar dorsal en mobile */
+    .team-dorsal-mobile {
+        display: inline-flex !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .team-card-v2 {
+        padding: 0.875rem;
+    }
+
+    .team-position {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+    }
+
+    .team-name {
+        font-size: 0.9375rem;
+    }
+
+    .team-category {
+        font-size: 0.6875rem;
+        padding: 0.1875rem 0.5rem;
+    }
+
+    .time-block {
+        min-width: 0;
+    }
+}
 </style>
 {% elif equipos|length <= 2 and equipos|length > 0 %}
 <div class="card">
