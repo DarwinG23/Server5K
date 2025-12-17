@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django import forms
 from django.utils.html import format_html
 from django.urls import path
 from django.shortcuts import redirect
@@ -296,28 +297,71 @@ class EquipoAdmin(admin.ModelAdmin):
     ver_resultados.allow_tags = True
 
 
+class JuezAdminForm(forms.ModelForm):
+    password1 = forms.CharField(
+        label='Contraseña',
+        required=False,
+        widget=forms.PasswordInput,
+        help_text='Se guarda de forma segura (hash). En edición, déjalo vacío si no deseas cambiarla.',
+    )
+    password2 = forms.CharField(
+        label='Confirmar contraseña',
+        required=False,
+        widget=forms.PasswordInput,
+    )
+
+    class Meta:
+        model = Juez
+        fields = ['username', 'first_name', 'last_name', 'email', 'is_active']
+
+    def clean(self):
+        cleaned = super().clean()
+        password1 = cleaned.get('password1')
+        password2 = cleaned.get('password2')
+
+        if not self.instance.pk:
+            # Creación: contraseña obligatoria
+            if not password1:
+                self.add_error('password1', 'La contraseña es obligatoria al crear un juez.')
+            if not password2:
+                self.add_error('password2', 'Confirma la contraseña.')
+
+        # Si se ingresó una contraseña, deben coincidir
+        if password1 or password2:
+            if password1 != password2:
+                self.add_error('password2', 'Las contraseñas no coinciden.')
+
+        return cleaned
+
+    def save(self, commit=True):
+        obj = super().save(commit=False)
+        password1 = self.cleaned_data.get('password1')
+        if password1:
+            obj.set_password(password1)
+        elif not obj.password:
+            # Seguridad: nunca dejar un juez sin password
+            obj.set_password('changeme')
+
+        if commit:
+            obj.save()
+        return obj
+
+
 @admin.register(Juez)
 class JuezAdmin(admin.ModelAdmin):
+    form = JuezAdminForm
     list_display = ['username', 'get_full_name', 'email', 'equipos_asignados', 'is_active']
     search_fields = ['username', 'first_name', 'last_name', 'email']
+    readonly_fields = ['created_at']
 
-    def save_model(self, request, obj, form, change):
-        """Hash de contraseña automático al crear/editar un juez desde el admin."""
-        from django.contrib.auth.hashers import identify_hasher, make_password
-
-        raw_password = obj.password or ''
-        needs_hash = False
-
-        try:
-            # Si no es un hash válido, lanzará ValueError
-            identify_hasher(raw_password)
-        except Exception:
-            needs_hash = True
-
-        if needs_hash:
-            obj.password = make_password(raw_password)
-
-        super().save_model(request, obj, form, change)
+    fieldsets = (
+        ('Acceso', {
+            'fields': ('username', 'password1', 'password2', 'is_active')
+        }),
+        ('Datos', {
+            'fields': ('first_name', 'last_name', 'email', 'created_at')
+        }),
+    )
 
     def equipos_asignados(self, obj):
         equipos = obj.teams.all()
