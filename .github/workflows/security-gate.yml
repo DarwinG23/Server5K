@@ -1,0 +1,23 @@
+name: Security Gate - Secret Scanning
+
+on:
+  push:
+    branches: [ main, master, dev ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  secret-scan:
+    name: Escaneo de Secretos con Gitleaks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar el codigo del repositorio
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Clona todo el historial para revisar commits anteriores
+
+      - name: Ejecutar Gitleaks Security Gate
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # Si encuentra un secreto quemado, el pipeline falla (círculo rojo ❌)
