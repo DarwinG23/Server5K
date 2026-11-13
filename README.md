@@ -161,6 +161,31 @@ docker compose build web
 
 ## API Endpoints Principales
 
+### Pruebas de autorización y controles de sesión
+
+Las pruebas de seguridad automatizadas se ejecutan con:
+
+```bash
+python manage.py test app.tests.tests
+```
+
+Se alternan dos jueces de prueba y se verifica que un juez no pueda cambiar el
+identificador de otro usuario para:
+
+1. Consultar el detalle de su equipo (`GET /api/equipos/{id}/`): responde
+   `404`, porque el `queryset` está limitado al juez autenticado.
+2. Consultar el estado de registros (`GET /api/equipos/{id}/registros/estado/`):
+   la corrección aplica la pertenencia del equipo en la consulta y responde
+   `404` ante un equipo ajeno.
+3. Enviar registros (`POST /api/equipos/{id}/registros/`): valida la asignación
+   antes de guardar y responde `403` ante un equipo ajeno.
+
+El endpoint de estado usado por el administrador ya no es público: requiere una
+sesión Django de un usuario `staff`; un juez común recibe `403`. Además, las
+pruebas comprueban que un token JWT alterado o expirado recibe `401`. La firma
+del token se valida mediante `JuezJWTAuthentication` y la expiración mediante
+la configuración `SIMPLE_JWT`.
+
 ### Autenticación
 
 -   `POST /api/login/` - Login de juez

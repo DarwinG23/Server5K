@@ -204,7 +204,7 @@ class EstadoEquipoRegistrosView(APIView):
         juez = request.user
         
         try:
-            equipo = Equipo.objects.get(id=equipo_id)
+            equipo = Equipo.objects.get(id=equipo_id, judge_id=juez.id)
         except Equipo.DoesNotExist:
             return Response(
                 {"error": "Equipo no encontrado"},
