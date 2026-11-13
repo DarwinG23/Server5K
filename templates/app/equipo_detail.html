@@ -32,14 +32,10 @@
                     {{ equipo.name }}
                 </h2>
                 <div style="display: flex; gap: 1rem; margin-top: 0.375rem; flex-wrap: wrap;">
-                    <span style="color: var(--text-secondary); font-size: 0.875rem;">
-                        <i class="bi-tag"></i> {{ equipo.get_category_display }}
+                    <span class="badge badge-secondary" style="font-size: 0.875rem; padding: 0.375rem 0.75rem; font-weight: 800; color: var(--text-primary);">
+                        <i class="bi-tag"></i>
+                        {{ equipo.get_category_display }}
                     </span>
-                    {% if equipo.judge %}
-                    <span style="color: var(--text-secondary); font-size: 0.875rem;">
-                        <i class="bi-person-badge"></i> {{ equipo.judge.get_full_name|default:equipo.judge.username }}
-                    </span>
-                    {% endif %}
                 </div>
             </div>
         </div>
@@ -61,16 +57,16 @@
             </div>
             {% endif %}
             <div class="stats-box" style="padding: 1rem; text-align: center; background: linear-gradient(135deg, #fffbeb 0%, #ffffff 100%); border-color: var(--warning);">
-                <div class="stats-label">⚡ Mejor Tiempo</div>
+                <div class="stats-label">Mejor Tiempo</div>
                 <div class="stats-value text-warning" style="font-size: 1.25rem;">{{ mejor_tiempo_formateado }}</div>
             </div>
             <div class="stats-box" style="padding: 1rem; text-align: center; background: linear-gradient(135deg, #dbeafe 0%, #ffffff 100%); border-color: var(--primary); border-width: 2px;">
-                <div class="stats-label">🏁 Tiempo Total</div>
+                <div class="stats-label">Tiempo Total</div>
                 <div class="stats-value" style="color: var(--primary); font-size: 1.25rem;">{{ tiempo_total_formateado }}</div>
             </div>
             {% if peor_tiempo_formateado != "00:00:00" %}
             <div class="stats-box" style="padding: 1rem; text-align: center;">
-                <div class="stats-label">🐢 Peor Tiempo</div>
+                <div class="stats-label">Peor Tiempo</div>
                 <div class="stats-value text-muted" style="font-size: 1.25rem;">{{ peor_tiempo_formateado }}</div>
             </div>
             {% endif %}
@@ -135,7 +131,7 @@
                         <td style="padding: 0.875rem 0.75rem;">
                             {% if registro.time == 0 %}
                                 <span class="badge badge-danger" style="font-size: 0.75rem;">
-                                    ❌ Ausente
+                                    Ausente
                                 </span>
                             {% else %}
                                 <span class="badge badge-success" style="font-size: 0.75rem;">

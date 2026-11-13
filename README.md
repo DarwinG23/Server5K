@@ -1,333 +1,243 @@
-# Server5K - Sistema de Gestión de Competencias 5K
+# Server5K - Sistema de Competencias 5K
 
-Sistema completo para gestión de competencias deportivas con registro de tiempos en tiempo real mediante WebSocket.
+Sistema backend para gestión de competencias 5K con registro de tiempos en tiempo real.
 
-## 📋 Tabla de Contenidos
+## Arquitectura
 
--   [Características](#características)
--   [Arquitectura del Proyecto](#arquitectura-del-proyecto)
--   [Requisitos](#requisitos)
--   [Instalación](#instalación)
--   [Configuración](#configuración)
--   [Desarrollo](#desarrollo)
--   [Producción](#producción)
--   [API Documentation](#api-documentation)
+-   **Django 6.0** + Django REST Framework (API REST)
+-   **Django Channels** + Daphne (WebSocket para tiempo real)
+-   **PostgreSQL 16** (Base de datos)
+-   **Redis 7** (Channel layer para WebSocket)
+-   **WhiteNoise** (Archivos estáticos)
 
-## ✨ Características
+---
 
--   **Autenticación JWT** para jueces
--   **WebSocket en tiempo real** para registro de tiempos
--   **Redis como transport layer** para escalabilidad
--   **API REST completa** con documentación OpenAPI
--   **Panel de administración** personalizado
--   **Servicios de negocio** separados y testeables
--   **Idempotencia** en registros de tiempo
--   **Validación robusta** de datos
--   **Soporte multi-juez** y multi-competencia
+## Despliegue con Docker Compose
 
-## 🏗️ Arquitectura del Proyecto
+El proyecto se despliega con **3 contenedores**:
 
-```
-Server5K/
-├── app/
-│   ├── models/              # Modelos de datos
-│   │   ├── competencia.py
-│   │   ├── juez.py
-│   │   ├── equipo.py
-│   │   └── registrotiempo.py
-│   ├── websocket/           # WebSocket consumers y routing
-│   │   ├── consumers.py
-│   │   ├── routing.py
-│   │   └── validators.py
-│   ├── services/            # Lógica de negocio
-│   │   ├── registro_service.py
-│   │   ├── competencia_service.py
-│   │   └── results_service.py
-│   ├── utils/               # Utilidades
-│   │   ├── idempotency.py
-│   │   └── timestamps.py
-│   ├── serializers/         # Serializers DRF
-│   ├── views/               # Vistas y ViewSets
-│   ├── admin/               # Configuración del admin
-│   └── management/          # Comandos personalizados
-├── server/
-│   ├── settings.py          # Configuración
-│   ├── asgi.py             # ASGI application
-│   └── urls.py             # URLs principales
-├── templates/               # Templates HTML
-├── manage.py
-└── pyproject.toml          # Dependencias (uv)
-```
+| Contenedor          | Imagen             | Puerto | Descripción                  |
+| ------------------- | ------------------ | ------ | ---------------------------- |
+| `server5k-web`      | Build local        | 8000   | Django + Daphne (ASGI)       |
+| `server5k-postgres` | postgres:16-alpine | 5432   | Base de datos PostgreSQL     |
+| `server5k-redis`    | redis:7-alpine     | 6379   | Channel layer para WebSocket |
 
-## 📦 Requisitos
+### Requisitos
 
-### Desarrollo
+-   **Docker** 20.10+
+-   **Docker Compose** 2.0+
 
--   Python 3.13+
--   uv (gestor de paquetes)
--   SQLite (incluido)
-
-### Producción
-
--   Python 3.13+
--   PostgreSQL 14+
--   Redis 7+
--   Nginx (reverse proxy)
--   Supervisor o systemd
-
-## 🚀 Instalación
-
-### 1. Clonar el repositorio
+### 1. Configurar Variables de Entorno
 
 ```bash
-git clone <repo-url>
-cd Server5K
+# Copiar el archivo de ejemplo
+cp .env.docker.example .env
+
+# Editar con tus valores
+nano .env  # o usa tu editor preferido
 ```
 
-### 2. Crear entorno virtual con uv
-
-```bash
-# Instalar uv si no lo tienes
-pip install uv
-
-# Crear entorno y instalar dependencias
-uv sync
-```
-
-### 3. Configurar base de datos
-
-```bash
-# Desarrollo (SQLite)
-uv run python manage.py migrate
-
-# Producción (ver sección de producción)
-```
-
-### 4. Crear superusuario
-
-```bash
-uv run python manage.py createsuperuser
-```
-
-### 5. Poblar datos de prueba (opcional)
-
-```bash
-uv run python manage.py populate_data
-```
-
-## ⚙️ Configuración
-
-### Variables de Entorno
-
-Crear archivo `.env` en la raíz del proyecto:
+**Variables importantes a configurar:**
 
 ```env
-# Django
-SECRET_KEY=your-secret-key-here
+# Genera una clave segura para producción:
+# python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+SECRET_KEY=tu_clave_secreta_de_50_caracteres
+
+# En producción, cambia a False
 DEBUG=False
-ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com
 
-# Base de datos
-DB_ENGINE=django.db.backends.postgresql
-DB_NAME=server5k
-DB_USER=server5k_user
-DB_PASSWORD=your-password
-DB_HOST=localhost
-DB_PORT=5432
+# Dominios/IPs permitidos (separados por coma)
+ALLOWED_HOSTS=midominio.com,192.168.1.100
 
-# Redis
-REDIS_HOST=localhost
-REDIS_PORT=6379
-
-# CORS
-CORS_ALLOWED_ORIGINS=https://yourdomain.com
+# Password seguro para PostgreSQL
+POSTGRES_PASSWORD=tu_password_super_seguro
 ```
 
-### Configurar Redis en settings.py
-
-Para producción, editar `server/settings.py`:
-
-```python
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {
-            'hosts': [(os.environ.get('REDIS_HOST', '127.0.0.1'),
-                      int(os.environ.get('REDIS_PORT', 6379)))],
-            'capacity': 1500,
-            'expiry': 10,
-        },
-    }
-}
-```
-
-## 💻 Desarrollo
-
-### Iniciar servidor de desarrollo
-
-```powershell
-# Con uv
-uv run python manage.py runserver
-
-# O con Daphne (recomendado para WebSocket)
-uv run daphne -b 127.0.0.1 -p 8000 server.asgi:application
-
-# O usar el script incluido
-.\start_server.ps1
-```
-
-### Acceder a la aplicación
-
--   **API**: http://localhost:8000/api/
--   **Admin**: http://localhost:8000/admin/
--   **Docs API**: http://localhost:8000/api/schema/swagger-ui/
--   **WebSocket**: ws://localhost:8000/ws/juez/{juez_id}/?token={jwt_token}
-
-### Ejecutar tests
-
-```powershell
-uv run pytest
-uv run pytest --cov=app
-```
-
-## 🌐 Producción
-
-### 1. Instalar Redis
+### 2. Iniciar los Contenedores
 
 ```bash
-# Ubuntu/Debian
-sudo apt update
-sudo apt install redis-server
+# Construir y levantar todos los servicios
+docker compose up -d --build
 
-# Verificar instalación
-redis-cli ping
-# Debe responder: PONG
+# Ver logs en tiempo real
+docker compose logs -f
 
-# Configurar Redis para iniciar al arranque
-sudo systemctl enable redis-server
-sudo systemctl start redis-server
+# Ver logs de un servicio específico
+docker compose logs -f web
 ```
 
-### 2. Instalar PostgreSQL
+### 3. Crear Superusuario (Primera vez)
 
 ```bash
-# Ubuntu/Debian
-sudo apt install postgresql postgresql-contrib
-
-# Crear base de datos y usuario
-sudo -u postgres psql
-
-CREATE DATABASE server5k;
-CREATE USER server5k_user WITH PASSWORD 'your-password';
-ALTER ROLE server5k_user SET client_encoding TO 'utf8';
-ALTER ROLE server5k_user SET default_transaction_isolation TO 'read committed';
-ALTER ROLE server5k_user SET timezone TO 'UTC';
-GRANT ALL PRIVILEGES ON DATABASE server5k TO server5k_user;
-\q
+docker compose exec web python manage.py createsuperuser
 ```
 
-### 3. Configurar el proyecto
+### 4. Crear Competencia, Jueces y Equipos
+
+El comando `populate_data` crea los datos iniciales necesarios para la competencia:
 
 ```bash
-# Instalar dependencias del sistema
-sudo apt install python3.13 python3.13-dev python3-pip build-essential libpq-dev
+# DESARROLLO: Crea 50 jueces con contraseñas simples (juez1123, juez2123, etc.)
+docker compose exec web python manage.py populate_data
 
-# Instalar uv
-pip install uv
+# PRODUCCIÓN: Crea jueces con contraseñas seguras aleatorias
+docker compose exec web python manage.py populate_data --production
 
-# Clonar y configurar
-cd /opt
-sudo git clone <repo-url> server5k
-cd server5k
-sudo chown -R www-data:www-data /opt/server5k
+# Personalizado: 20 jueces con nombre de competencia específico
+docker compose exec web python manage.py populate_data --production --jueces 20 --competencia "5K UNL 2025"
 
-# Instalar dependencias
-uv sync
-
-# Configurar variables de entorno
-sudo nano /opt/server5k/.env
-# (Copiar configuración de producción)
-
-# Migraciones
-uv run python manage.py migrate
-
-# Recolectar archivos estáticos
-uv run python manage.py collectstatic --noinput
-
-# Crear superusuario
-uv run python manage.py createsuperuser
+# Limpiar y recrear todo (¡CUIDADO! Elimina datos existentes)
+docker compose exec web python manage.py populate_data --clear --production --jueces 30
 ```
 
-### 4. Configurar Daphne con Supervisor
+**Opciones disponibles:**
 
-Crear `/etc/supervisor/conf.d/server5k.conf`:
+| Opción                   | Descripción                                                             |
+| ------------------------ | ----------------------------------------------------------------------- |
+| `--production`           | Genera contraseñas seguras aleatorias (12 caracteres)                   |
+| `--jueces N`             | Número de jueces/equipos a crear (default: 50, máx: 100)                |
+| `--competencia "NOMBRE"` | Nombre personalizado para la competencia                                |
+| `--password BASE`        | Contraseña base en desarrollo (ej: `--password pass` → pass1, pass2...) |
+| `--clear`                | Elimina todos los datos antes de crear nuevos                           |
 
-```ini
-[program:server5k]
-command=/opt/server5k/.venv/bin/daphne -b 127.0.0.1 -p 8000 server.asgi:application
-directory=/opt/server5k
-user=www-data
-autostart=true
-autorestart=true
-redirect_stderr=true
-stdout_logfile=/var/log/server5k/daphne.log
-stderr_logfile=/var/log/server5k/daphne.error.log
-environment=DJANGO_SETTINGS_MODULE="server.settings"
-```
-
-Crear directorio de logs:
+**IMPORTANTE**: El comando genera un archivo `credenciales_jueces.txt` con todas las contraseñas.
 
 ```bash
-sudo mkdir -p /var/log/server5k
-sudo chown www-data:www-data /var/log/server5k
+# Ver las credenciales generadas
+docker compose exec web cat credenciales_jueces.txt
+
+# Copiar el archivo a tu máquina local
+docker cp server5k-web:/app/credenciales_jueces.txt ./credenciales_jueces.txt
 ```
 
-Iniciar Supervisor:
+### 5. Verificar que todo funciona
+
+-   **API REST**: http://localhost:8000/api/
+-   **Admin Django**: http://localhost:8000/admin/
+-   **Documentación API**: http://localhost:8000/api/docs/
+-   **Health Check**: http://localhost:8000/api/health/
+
+---
+
+## Comandos Útiles
 
 ```bash
-sudo supervisorctl reread
-sudo supervisorctl update
-sudo supervisorctl start server5k
-sudo supervisorctl status
+# Detener todos los contenedores
+docker compose down
+
+# Detener y eliminar volúmenes (¡BORRA DATOS!)
+docker compose down -v
+
+# Reiniciar un servicio específico
+docker compose restart web
+
+# Ejecutar migraciones manualmente
+docker compose exec web python manage.py migrate
+
+# Acceder al shell de Django
+docker compose exec web python manage.py shell
+
+# Ver estado de los contenedores
+docker compose ps
+
+# Reconstruir solo la imagen web
+docker compose build web
 ```
 
-### 5. Configurar Nginx
+---
 
-Crear `/etc/nginx/sites-available/server5k`:
+## Estructura de Volúmenes
+
+| Volumen              | Contenido             |
+| -------------------- | --------------------- |
+| `server5k_pgdata`    | Datos de PostgreSQL   |
+| `server5k_redisdata` | Datos de Redis        |
+| `server5k_static`    | Archivos estáticos    |
+| `server5k_media`     | Archivos subidos      |
+| `server5k_logs`      | Logs de la aplicación |
+
+---
+
+## API Endpoints Principales
+
+### Pruebas de autorización y controles de sesión
+
+Las pruebas de seguridad automatizadas se ejecutan con:
+
+```bash
+python manage.py test app.tests.tests
+```
+
+Se alternan dos jueces de prueba y se verifica que un juez no pueda cambiar el
+identificador de otro usuario para:
+
+1. Consultar el detalle de su equipo (`GET /api/equipos/{id}/`): responde
+   `404`, porque el `queryset` está limitado al juez autenticado.
+2. Consultar el estado de registros (`GET /api/equipos/{id}/registros/estado/`):
+   la corrección aplica la pertenencia del equipo en la consulta y responde
+   `404` ante un equipo ajeno.
+3. Enviar registros (`POST /api/equipos/{id}/registros/`): valida la asignación
+   antes de guardar y responde `403` ante un equipo ajeno.
+
+El endpoint de estado usado por el administrador ya no es público: requiere una
+sesión Django de un usuario `staff`; un juez común recibe `403`. Además, las
+pruebas comprueban que un token JWT alterado o expirado recibe `401`. La firma
+del token se valida mediante `JuezJWTAuthentication` y la expiración mediante
+la configuración `SIMPLE_JWT`.
+
+### Autenticación
+
+-   `POST /api/login/` - Login de juez
+-   `POST /api/logout/` - Logout
+-   `POST /api/token/refresh/` - Refrescar token JWT
+-   `GET /api/me/` - Información del juez autenticado
+
+### Competencias
+
+-   `GET /api/competencias/` - Listar competencias
+-   `GET /api/competencias/{id}/` - Detalle de competencia
+
+### Equipos
+
+-   `GET /api/equipos/` - Listar equipos del juez
+-   `GET /api/equipos/{id}/` - Detalle de equipo
+
+### Registros de Tiempo
+
+-   `POST /api/equipos/{id}/registros/` - Registrar tiempo
+-   `GET /api/equipos/{id}/registros/estado/` - Estado de registros
+
+### WebSocket
+
+-   `ws://host:8000/ws/juez/{juez_id}/` - Conexión WebSocket para tiempo real
+
+---
+
+## Producción con HTTPS (Nginx)
+
+Para producción con SSL, agrega Nginx como reverse proxy:
 
 ```nginx
-upstream django {
-    server 127.0.0.1:8000;
+server {
+    listen 80;
+    server_name midominio.com;
+    return 301 https://$server_name$request_uri;
 }
 
 server {
-    listen 80;
-    server_name yourdomain.com www.yourdomain.com;
+    listen 443 ssl http2;
+    server_name midominio.com;
 
-    # Redirigir a HTTPS (configurar después de obtener certificado SSL)
-    # return 301 https://$server_name$request_uri;
+    ssl_certificate /etc/letsencrypt/live/midominio.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/midominio.com/privkey.pem;
 
-    client_max_body_size 100M;
-
-    # Logs
-    access_log /var/log/nginx/server5k_access.log;
-    error_log /var/log/nginx/server5k_error.log;
-
-    # Archivos estáticos
     location /static/ {
-        alias /opt/server5k/staticfiles/;
-        expires 30d;
-        add_header Cache-Control "public, immutable";
+        alias /var/www/server5k/staticfiles/;
     }
 
-    location /media/ {
-        alias /opt/server5k/media/;
-        expires 30d;
-    }
-
-    # WebSocket
     location /ws/ {
-        proxy_pass http://django;
+        proxy_pass http://127.0.0.1:8000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
@@ -335,200 +245,77 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_read_timeout 86400;
     }
 
-    # API y Admin
     location / {
-        proxy_pass http://django;
+        proxy_pass http://127.0.0.1:8000;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_redirect off;
     }
 }
 ```
 
-Activar configuración:
+**Nota**: Para habilitar redirección HTTPS en Django, agrega `ENABLE_HTTPS=True` en `.env`.
+
+---
+
+## Desarrollo Local (sin Docker)
+
+Si prefieres desarrollar sin Docker:
 
 ```bash
-sudo ln -s /etc/nginx/sites-available/server5k /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo systemctl restart nginx
+# Instalar dependencias con uv
+uv sync
+
+# Activar entorno
+source .venv/bin/activate  # Linux/macOS
+.\.venv\Scripts\activate   # Windows
+
+# Iniciar PostgreSQL y Redis con Docker
+docker compose up -d postgres redis
+
+# Aplicar migraciones
+python manage.py migrate
+
+# Iniciar servidor de desarrollo
+daphne -b 127.0.0.1 -p 8000 server.asgi:application
 ```
 
-### 6. Configurar SSL con Let's Encrypt (Opcional pero recomendado)
+---
+
+## Troubleshooting
+
+### El contenedor web no inicia
 
 ```bash
-sudo apt install certbot python3-certbot-nginx
-sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com
+# Ver logs detallados
+docker compose logs web
+
+# Verificar que postgres y redis estén healthy
+docker compose ps
 ```
 
-### 7. Monitoreo de Redis
+### Error de conexión a la base de datos
 
 ```bash
-# Ver estadísticas en tiempo real
-redis-cli INFO
-redis-cli MONITOR
+# Verificar que postgres esté corriendo
+docker compose exec postgres pg_isready -U server5k
 
-# Ver número de clientes conectados
-redis-cli CLIENT LIST
-
-# Ver uso de memoria
-redis-cli INFO memory
+# Reiniciar postgres
+docker compose restart postgres
 ```
 
-## 📡 Uso de WebSocket
-
-### Conectar desde cliente
-
-```javascript
-const token = "your-jwt-access-token";
-const juezId = 1;
-const ws = new WebSocket(
-    `ws://localhost:8000/ws/juez/${juezId}/?token=${token}`
-);
-
-ws.onopen = () => {
-    console.log("Conectado");
-};
-
-ws.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-    console.log("Mensaje recibido:", data);
-};
-
-// Registrar un tiempo
-ws.send(
-    JSON.stringify({
-        tipo: "registrar_tiempo",
-        equipo_id: 5,
-        tiempo: 1234567, // milisegundos
-        horas: 0,
-        minutos: 20,
-        segundos: 34,
-        milisegundos: 567,
-    })
-);
-
-// Registrar múltiples tiempos (batch)
-ws.send(
-    JSON.stringify({
-        tipo: "registrar_tiempos",
-        equipo_id: 5,
-        registros: [
-            {
-                tiempo: 1234567,
-                horas: 0,
-                minutos: 20,
-                segundos: 34,
-                milisegundos: 567,
-            },
-            // ... más registros (máximo 15)
-        ],
-    })
-);
-```
-
-## 📚 API Documentation
-
-La documentación completa de la API está disponible en:
-
--   **Swagger UI**: `/api/schema/swagger-ui/`
--   **ReDoc**: `/api/schema/redoc/`
--   **OpenAPI Schema**: `/api/schema/`
-
-### Endpoints principales
-
-#### Autenticación
-
--   `POST /api/login/` - Iniciar sesión
--   `POST /api/logout/` - Cerrar sesión
--   `POST /api/refresh/` - Refrescar token
--   `GET /api/me/` - Información del juez autenticado
-
-#### Competencias
-
--   `GET /api/competencias/` - Listar competencias
--   `GET /api/competencias/{id}/` - Detalle de competencia
-
-#### Equipos
-
--   `GET /api/equipos/` - Listar equipos
--   `GET /api/equipos/{id}/` - Detalle de equipo
-
-## 🔧 Comandos útiles
-
-```powershell
-# Crear datos de prueba
-uv run python manage.py populate_data
-
-# Limpiar registros antiguos
-uv run python manage.py shell
->>> from app.utils.idempotency import limpiar_registros_antiguos
->>> count = limpiar_registros_antiguos(dias=90)
->>> print(f"Eliminados {count} registros")
-
-# Ver estadísticas de Redis
-redis-cli INFO stats
-
-# Limpiar Redis (¡CUIDADO!)
-redis-cli FLUSHALL
-
-# Ver logs de Daphne (Linux)
-sudo tail -f /var/log/server5k/daphne.log
-```
-
-## 🐛 Troubleshooting
-
-### Redis no conecta
+### Problemas con migraciones
 
 ```bash
-# Verificar que Redis está corriendo
-sudo systemctl status redis-server
-
-# Verificar puerto
-sudo netstat -tulpn | grep 6379
-
-# Ver logs
-sudo journalctl -u redis-server -f
+# Ejecutar migraciones manualmente
+docker compose exec web python manage.py migrate --noinput
 ```
 
-### WebSocket no conecta
+---
 
-1. Verificar que Daphne está corriendo
-2. Verificar configuración de Nginx para WebSocket
-3. Revisar logs: `sudo tail -f /var/log/nginx/server5k_error.log`
-4. Verificar que el token JWT es válido
+## Licencia
 
-### Errores de base de datos
-
-```bash
-# Ver conexiones activas
-sudo -u postgres psql server5k -c "SELECT * FROM pg_stat_activity;"
-
-# Reiniciar PostgreSQL
-sudo systemctl restart postgresql
-```
-
-## 📝 Notas de Seguridad
-
--   Cambiar `SECRET_KEY` en producción
--   Configurar `ALLOWED_HOSTS` apropiadamente
--   Usar HTTPS en producción
--   Configurar firewall (UFW) para permitir solo puertos necesarios
--   Actualizar dependencias regularmente: `uv sync --upgrade`
--   Hacer backups regulares de la base de datos y Redis
-
-## 📄 Licencia
-
-[Especificar licencia]
-
-## 👥 Contribución
-
-[Instrucciones de contribución]
-
-## 📞 Soporte
-
-[Información de contacto]
+MIT License

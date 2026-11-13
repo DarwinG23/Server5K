@@ -3,6 +3,7 @@
 
 {% block extrahead %}
 {{ block.super }}
+{% verbatim %}
 <style>
     .cronometro-inline {
         font-family: 'Courier New', monospace;
@@ -27,6 +28,7 @@
         }
     }
 </style>
+{% endverbatim %}
 
 <script>
 (function() {
@@ -54,28 +56,38 @@
         });
     }
     
-    // Función para verificar y actualizar estado cada 2 segundos
+    let pollIntervalId = null;
+
+    // Función para verificar y actualizar estado solo cuando hay competencias en curso
     function verificarEstado() {
         fetch('/api/admin/estado-competencias/')
             .then(response => response.json())
             .then(data => {
-                // La página se recargará automáticamente si hay cambios de estado
-                // mediante los botones de iniciar/detener
+                const hayEnCurso = data.some(item => item.is_running);
+
+                // Si hay alguna en curso y no estamos haciendo polling, arrancar
+                if (hayEnCurso && !pollIntervalId) {
+                    pollIntervalId = setInterval(verificarEstado, 2000);
+                }
+
+                // Si no hay ninguna en curso, detener el polling para no saturar logs ni CPU
+                if (!hayEnCurso && pollIntervalId) {
+                    clearInterval(pollIntervalId);
+                    pollIntervalId = null;
+                }
             })
             .catch(error => {
                 console.error('Error verificando estado:', error);
             });
     }
-    
-    // Iniciar actualización cada 100ms para precisión del cronómetro
-    setInterval(actualizarCronometros, 100);
-    
-    // Verificar estado cada 2 segundos
-    setInterval(verificarEstado, 2000);
-    
-    // Actualizar inmediatamente al cargar
+
+    // Iniciar actualización cada 100ms para precisión del cronómetro (solo útil si hay en curso)
+    const cronometroIntervalId = setInterval(actualizarCronometros, 100);
+
+    // Al cargar, hacer una verificación inicial; solo se mantendrá polling si hay en curso
     document.addEventListener('DOMContentLoaded', function() {
         actualizarCronometros();
+        verificarEstado();
     });
 })();
 </script>

@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django import forms
 from django.utils.html import format_html
 from django.urls import path
 from django.shortcuts import redirect
@@ -13,9 +14,9 @@ class EstadoCompetenciaFilter(admin.SimpleListFilter):
 
     def lookups(self, request, model_admin):
         return (
-            ('en_curso', '🟢 En Curso'),
-            ('finalizada', '⚫ Finalizada'),
-            ('programada', '🟠 Programada'),
+            ('en_curso', 'En curso'),
+            ('finalizada', 'Finalizada'),
+            ('programada', 'Programada'),
         )
 
     def queryset(self, request, queryset):
@@ -112,7 +113,7 @@ class CompetenciaAdmin(admin.ModelAdmin):
                 '<span style="padding: 6px 12px; background-color: #28a745; color: white; '
                 'border-radius: 20px; font-weight: bold; font-size: 11px; '
                 'text-transform: uppercase; letter-spacing: 0.5px;">'
-                '🏁 EN CURSO</span>'
+                'EN CURSO</span>'
                 '<span class="cronometro-inline" data-started-at="{}" '
                 'style="font-family: \'Courier New\', monospace; font-size: 16px; '
                 'font-weight: bold; color: #28a745; background: #f0f0f0; padding: 4px 10px; '
@@ -125,14 +126,16 @@ class CompetenciaAdmin(admin.ModelAdmin):
                 '<span style="padding: 6px 12px; background-color: #6c757d; color: white; '
                 'border-radius: 20px; font-weight: bold; font-size: 11px; '
                 'text-transform: uppercase; letter-spacing: 0.5px;">'
-                '⏹️ FINALIZADA</span>'
+                '{}</span>',
+                'FINALIZADA'
             )
         else:
             return format_html(
                 '<span style="padding: 6px 12px; background-color: #ffc107; color: #000; '
                 'border-radius: 20px; font-weight: bold; font-size: 11px; '
                 'text-transform: uppercase; letter-spacing: 0.5px;">'
-                '🕒 PROGRAMADA</span>'
+                '{}</span>',
+                'PROGRAMADA'
             )
     
     get_status_display.short_description = 'Estado'
@@ -150,19 +153,26 @@ class CompetenciaAdmin(admin.ModelAdmin):
                 'style="background-color: #dc3545; color: white; padding: 6px 12px; '
                 'text-decoration: none; border-radius: 4px; font-size: 12px; font-weight: bold; '
                 'display: inline-block; border: none; cursor: pointer;">'
-                '⏹️ Detener</a>',
+                'Detener</a>',
                 url
             )
         else:
             # Botón para iniciar (verde)
+            from django.urls import reverse
+            from django.utils.html import format_html
+            import json
+
             url = reverse('admin:app_competencia_iniciar', args=[obj.pk])
+            # Usar json.dumps para escapar de forma segura el nombre para JavaScript
+            confirm_message = f"¿Iniciar la competencia {json.dumps(obj.name)}?"
+            
             return format_html(
-                '<a class="button" href="{}" onclick="return confirm(\'¿Iniciar la competencia {}?\');" '
+                '<a class="button" href="{}" onclick="return confirm({});" '
                 'style="background-color: #28a745; color: white; padding: 6px 12px; '
                 'text-decoration: none; border-radius: 4px; font-size: 12px; font-weight: bold; '
                 'display: inline-block; border: none; cursor: pointer;">'
-                '🟢 Iniciar</a>',
-                url, obj.name
+                'Iniciar</a>',
+                url, confirm_message
             )
     
     acciones_competencia.short_description = 'Acciones'
@@ -171,30 +181,30 @@ class CompetenciaAdmin(admin.ModelAdmin):
     def iniciar_competencia(self, request, queryset):
         """Acción personalizada para iniciar competencia (solo una a la vez)"""
         if queryset.count() > 1:
-            self.message_user(request, "⚠️ Solo puedes iniciar una competencia a la vez", level='error')
+            self.message_user(request, "Solo puedes iniciar una competencia a la vez.", level='error')
             return
         
         competencia = queryset.first()
         resultado = competencia.start()
         
         if resultado['success']:
-            self.message_user(request, f"✅ Competencia '{competencia.name}' iniciada correctamente.")
+            self.message_user(request, f"Competencia '{competencia.name}' iniciada correctamente.")
         elif resultado['message'] == 'already_running':
             self.message_user(
                 request, 
-                f"⚠️ La competencia '{competencia.name}' ya está en curso", 
+                f"La competencia '{competencia.name}' ya está en curso.", 
                 level='warning'
             )
         elif resultado['message'] == 'another_running':
             otra = resultado['competencia']
             self.message_user(
                 request,
-                f"❌ No se puede iniciar '{competencia.name}'. La competencia '{otra.name}' ya está en curso. "
+                f"No se puede iniciar '{competencia.name}'. La competencia '{otra.name}' ya está en curso. "
                 f"Primero debes detener la competencia activa desde el administrador.",
                 level='error'
             )
     
-    iniciar_competencia.short_description = "🟢 Iniciar competencia seleccionada"
+    iniciar_competencia.short_description = "Iniciar competencia seleccionada"
 
     def detener_competencia(self, request, queryset):
         """Acción personalizada para detener competencia"""
@@ -205,11 +215,11 @@ class CompetenciaAdmin(admin.ModelAdmin):
                 count += 1
         
         if count > 0:
-            self.message_user(request, f"✅ {count} competencia(s) detenida(s) correctamente")
+            self.message_user(request, f"{count} competencia(s) detenida(s) correctamente.")
         else:
-            self.message_user(request, "⚠️ Las competencias seleccionadas no estaban en curso", level='warning')
+            self.message_user(request, "Las competencias seleccionadas no estaban en curso.", level='warning')
     
-    detener_competencia.short_description = "⏹️ Detener competencia(s) seleccionada(s)"
+    detener_competencia.short_description = "Detener competencia(s) seleccionada(s)"
 
     def get_urls(self):
         """Agrega URLs personalizadas para los botones de acción"""
@@ -235,18 +245,18 @@ class CompetenciaAdmin(admin.ModelAdmin):
             resultado = competencia.start()
             
             if resultado['success']:
-                messages.success(request, f"✅ Competencia '{competencia.name}' iniciada correctamente.")
+                messages.success(request, f"Competencia '{competencia.name}' iniciada correctamente.")
             elif resultado['message'] == 'already_running':
-                messages.warning(request, f"⚠️ La competencia '{competencia.name}' ya está en curso.")
+                messages.warning(request, f"La competencia '{competencia.name}' ya está en curso.")
             elif resultado['message'] == 'another_running':
                 otra = resultado['competencia']
                 messages.error(
                     request,
-                    f"❌ No se puede iniciar '{competencia.name}'. La competencia '{otra.name}' ya está en curso. "
+                    f"No se puede iniciar '{competencia.name}'. La competencia '{otra.name}' ya está en curso. "
                     f"Primero debes detener la competencia activa."
                 )
         except Competencia.DoesNotExist:
-            messages.error(request, "❌ La competencia no existe.")
+            messages.error(request, "La competencia no existe.")
         
         return redirect('admin:app_competencia_changelist')
 
@@ -257,11 +267,11 @@ class CompetenciaAdmin(admin.ModelAdmin):
             resultado = competencia.stop()
             
             if resultado['success']:
-                messages.success(request, f"✅ Competencia '{competencia.name}' detenida correctamente.")
+                messages.success(request, f"Competencia '{competencia.name}' detenida correctamente.")
             else:
-                messages.warning(request, f"⚠️ La competencia '{competencia.name}' no estaba en curso.")
+                messages.warning(request, f"La competencia '{competencia.name}' no estaba en curso.")
         except Competencia.DoesNotExist:
-            messages.error(request, "❌ La competencia no existe.")
+            messages.error(request, "La competencia no existe.")
         
         return redirect('admin:app_competencia_changelist')
 
@@ -287,10 +297,71 @@ class EquipoAdmin(admin.ModelAdmin):
     ver_resultados.allow_tags = True
 
 
+class JuezAdminForm(forms.ModelForm):
+    password1 = forms.CharField(
+        label='Contraseña',
+        required=False,
+        widget=forms.PasswordInput,
+        help_text='Se guarda de forma segura (hash). En edición, déjalo vacío si no deseas cambiarla.',
+    )
+    password2 = forms.CharField(
+        label='Confirmar contraseña',
+        required=False,
+        widget=forms.PasswordInput,
+    )
+
+    class Meta:
+        model = Juez
+        fields = ['username', 'first_name', 'last_name', 'email', 'is_active']
+
+    def clean(self):
+        cleaned = super().clean()
+        password1 = cleaned.get('password1')
+        password2 = cleaned.get('password2')
+
+        if not self.instance.pk:
+            # Creación: contraseña obligatoria
+            if not password1:
+                self.add_error('password1', 'La contraseña es obligatoria al crear un juez.')
+            if not password2:
+                self.add_error('password2', 'Confirma la contraseña.')
+
+        # Si se ingresó una contraseña, deben coincidir
+        if password1 or password2:
+            if password1 != password2:
+                self.add_error('password2', 'Las contraseñas no coinciden.')
+
+        return cleaned
+
+    def save(self, commit=True):
+        obj = super().save(commit=False)
+        password1 = self.cleaned_data.get('password1')
+        if password1:
+            obj.set_password(password1)
+        elif not obj.password:
+            # Seguridad: nunca dejar un juez sin password
+            obj.set_password('changeme')
+
+        if commit:
+            obj.save()
+        return obj
+
+
 @admin.register(Juez)
 class JuezAdmin(admin.ModelAdmin):
+    form = JuezAdminForm
     list_display = ['username', 'get_full_name', 'email', 'equipos_asignados', 'is_active']
     search_fields = ['username', 'first_name', 'last_name', 'email']
+    readonly_fields = ['created_at']
+
+    fieldsets = (
+        ('Acceso', {
+            'fields': ('username', 'password1', 'password2', 'is_active')
+        }),
+        ('Datos', {
+            'fields': ('first_name', 'last_name', 'email', 'created_at')
+        }),
+    )
 
     def equipos_asignados(self, obj):
         equipos = obj.teams.all()

@@ -1,19 +1,18 @@
-"""
-Vistas específicas para el Admin de Django (sin autenticación)
-"""
+"""Vistas específicas para el Admin de Django."""
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
+from rest_framework.authentication import SessionAuthentication
+from rest_framework.permissions import IsAdminUser
 from app.models import Competencia
 
 
 class EstadoCompetenciaAdminView(APIView):
     """
-    Vista pública para obtener el estado de las competencias.
+    Vista protegida para obtener el estado de las competencias.
     Usada por el admin de Django para actualizar el cronómetro.
-    No requiere autenticación.
     """
-    permission_classes = [AllowAny]
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [IsAdminUser]
     
     def get(self, request):
         """Retorna todas las competencias con su estado"""

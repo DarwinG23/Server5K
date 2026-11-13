@@ -1,4 +1,5 @@
 from django.urls import path, include
+from django.http import JsonResponse
 from rest_framework.routers import DefaultRouter
 from app.views import (
     LoginView,
@@ -8,7 +9,15 @@ from app.views import (
     CompetenciaViewSet,
     EquipoViewSet,
     EstadoCompetenciaAdminView,
+    RegistrarTiemposView,
+    EstadoEquipoRegistrosView,
 )
+
+
+def health_check(request):
+    """Endpoint de health check para Docker/Kubernetes."""
+    return JsonResponse({"status": "ok"})
+
 
 # Router de DRF para ViewSets
 router = DefaultRouter()
@@ -16,6 +25,9 @@ router.register(r'competencias', CompetenciaViewSet, basename='competencia')
 router.register(r'equipos', EquipoViewSet, basename='equipo')
 
 urlpatterns = [
+    # Health check (para Docker)
+    path('health/', health_check, name='health_check'),
+    
     # Autenticación
     path('login/', LoginView.as_view(), name='login'),
     path('logout/', LogoutView.as_view(), name='logout'),
@@ -24,6 +36,10 @@ urlpatterns = [
     
     # Endpoint público para admin (sin autenticación)
     path('admin/estado-competencias/', EstadoCompetenciaAdminView.as_view(), name='admin_estado_competencias'),
+    
+    # Endpoints de registros de tiempo (HTTP)
+    path('equipos/<int:equipo_id>/registros/', RegistrarTiemposView.as_view(), name='registrar_tiempos'),
+    path('equipos/<int:equipo_id>/registros/estado/', EstadoEquipoRegistrosView.as_view(), name='estado_registros'),
     
     # Incluir rutas del router (Competencias y Equipos)
     path('', include(router.urls)),

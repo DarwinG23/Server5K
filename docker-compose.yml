@@ -1,0 +1,103 @@
+# ============================================================================
+# Docker Compose - Server5K (Producción)
+# ============================================================================
+# Uso:
+#   1. Copia .env.example a .env y configura las variables
+#   2. Ejecuta: docker compose up -d
+#   3. Para ver logs: docker compose logs -f
+#   4. Para detener: docker compose down
+# ============================================================================
+
+
+services:
+  # ==========================================================================
+  # Base de Datos PostgreSQL (Inicia primero)
+  # ==========================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: server5k-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-server5k}
+      POSTGRES_USER: ${POSTGRES_USER:-server5k}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-server5k_password}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-server5k} -d ${POSTGRES_DB:-server5k}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+
+  # ==========================================================================
+  # Redis 
+  # ==========================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: server5k-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redisdata:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+
+  # ==========================================================================
+  # Aplicación 
+  # ==========================================================================
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: server5k-web
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: postgres
+      REDIS_HOST: redis
+    volumes:
+      - static_volume:/app/staticfiles
+      - media_volume:/app/mediafiles
+      - logs_volume:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    ports:
+      - "8000:8000" 
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py collectstatic --noinput &&
+             exec daphne -b 0.0.0.0 -p 8000 server.asgi:application"
+
+# ============================================================================
+# Volúmenes persistentes
+# ============================================================================
+volumes:
+  pgdata:
+    name: server5k_pgdata
+  redisdata:
+    name: server5k_redisdata
+  static_volume:
+    name: server5k_static
+  media_volume:
+    name: server5k_media
+  logs_volume:
+    name: server5k_logs

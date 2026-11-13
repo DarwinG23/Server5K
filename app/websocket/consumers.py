@@ -45,25 +45,24 @@ class JuezConsumer(AsyncJsonWebsocketConsumer):
         qs = self.scope.get('query_string', b'').decode()
         params = urllib.parse.parse_qs(qs)
         token = params.get('token', [None])[0]
-        
-        logger.info(f"Intento de conexión WebSocket")
-        logger.info(f" Query string: {qs[:100]}...")
-        logger.info(f" Token extraído: {token[:50] if token else 'None'}...")
+
+        # No loggear tokens ni querystrings (seguridad). Mantener logs mínimos y útiles.
+        logger.info("WebSocket connect attempt")
         
         if not token:
-            logger.error(" Token no proporcionado - Rechazando conexión")
+            logger.warning("WebSocket rejected: missing token")
             await self.close(code=4001)
             return
 
         try:
             juez = await get_juez_from_token(token)
             if not juez:
-                logger.error(" Token inválido o juez no encontrado - Rechazando conexión")
+                logger.warning("WebSocket rejected: invalid token or inactive judge")
                 await self.close(code=4002)
                 return
-            logger.info(f" Token válido - Juez: {juez.username} (ID: {juez.id})")
+            logger.info("WebSocket authenticated: juez=%s id=%s", juez.username, juez.id)
         except Exception as e:
-            logger.error(f" Error validando token: {e}")
+            logger.exception("WebSocket token validation error")
             await self.close(code=4000)
             return
 
@@ -71,23 +70,22 @@ class JuezConsumer(AsyncJsonWebsocketConsumer):
 
         # Verificar que el juez_id de la URL coincida con el juez autenticado
         self.juez_id = str(self.scope['url_route']['kwargs'].get('juez_id'))
-        logger.info(f" Verificando juez_id - URL: {self.juez_id}, Token: {self.juez.id}")
+        logger.debug("Verifying juez_id: url=%s token=%s", self.juez_id, self.juez.id)
         
         if str(self.juez.id) != self.juez_id:
-            logger.error(f" Juez ID no coincide - URL: {self.juez_id}, Token: {self.juez.id}")
+            logger.warning("WebSocket rejected: juez_id mismatch url=%s token=%s", self.juez_id, self.juez.id)
             await self.close(code=4003)
             return
-        
-        logger.info(" Juez ID coincide")
+
         # Verificar que la competencia esté activa
-        logger.info(" Verificando competencia activa...")
+        logger.debug("Checking active competition for juez_id=%s", self.juez_id)
         competencia_activa = await verificar_competencia_activa(self.juez)
         if not competencia_activa:
-            logger.error(f" Juez {self.juez_id} no tiene competencia activa")
+            logger.warning("WebSocket rejected: no active competition juez_id=%s", self.juez_id)
             await self.close(code=4004)
             return
-        
-        logger.info("✅ Competencia activa verificada")
+
+        logger.debug("Active competition verified juez_id=%s", self.juez_id)
         
         # Unirse al grupo del juez y al grupo de la competencia
         self.group_name = f'juez_{self.juez_id}'
@@ -98,23 +96,22 @@ class JuezConsumer(AsyncJsonWebsocketConsumer):
         if competencia_id:
             self.competencia_group = f'competencia_{competencia_id}'
             await self.channel_layer.group_add(self.competencia_group, self.channel_name)
-            logger.info(f"📢 Juez {self.juez_id} unido al grupo {self.competencia_group}")
+            logger.debug("Joined group %s for juez_id=%s", self.competencia_group, self.juez_id)
         
         await self.channel_layer.group_add(self.group_name, self.channel_name)
         
-        logger.info(f" Aceptando conexión WebSocket para juez {self.juez_id}")
+        logger.info("WebSocket accepted: juez_id=%s", self.juez_id)
         await self.accept()
         
         # Enviar estado de la competencia al conectar
         estado_competencia = await obtener_estado_competencia(self.juez)
-        logger.info(f" Enviando estado inicial - Competencia: {estado_competencia}")
+        logger.debug("Sending initial competition state juez_id=%s state=%s", self.juez_id, estado_competencia)
         await self.send_json({
             'tipo': 'conexion_establecida',
             'mensaje': 'Conectado exitosamente',
             'competencia': estado_competencia
         })
-        
-        logger.info(f"✅✅✅ Conexión WebSocket establecida exitosamente para juez {self.juez.username} (ID: {self.juez_id})")
+        logger.info("WebSocket ready: juez=%s id=%s", self.juez.username, self.juez_id)
 
     @database_sync_to_async
     def get_competencia_id_del_juez(self):
@@ -124,9 +121,9 @@ class JuezConsumer(AsyncJsonWebsocketConsumer):
         """
         equipo = self.juez.teams.select_related('competition').first()
         if equipo:
-            logger.debug(f"🔍 Equipo encontrado: {equipo.name} - Competencia: {equipo.competition.name}")
+            logger.debug("Team found: equipo=%s competencia=%s", equipo.name, equipo.competition.name)
             return equipo.competition_id
-        logger.warning(f"⚠️ Juez {self.juez_id} no tiene equipos asignados")
+        logger.warning("Judge has no assigned teams juez_id=%s", self.juez_id)
         return None
 
     async def disconnect(self, close_code):
@@ -139,27 +136,33 @@ class JuezConsumer(AsyncJsonWebsocketConsumer):
             await self.channel_layer.group_discard(self.competencia_group, self.channel_name)
         except Exception:
             pass
+        logger.info("WebSocket disconnected: juez_id=%s code=%s", getattr(self, 'juez_id', None), close_code)
 
     async def receive_json(self, content, **kwargs):
         """
         Maneja mensajes JSON del cliente.
         
         Mensajes soportados:
-        1. registrar_tiempo: Registra el tiempo de llegada de un equipo
-        2. registrar_tiempos: Registra múltiples tiempos en batch
-        3. ping: Mantiene la conexión viva (heartbeat)
+        1. ping: Mantiene la conexión viva (heartbeat)
+        
+        NOTA: Los registros de tiempo ahora se envían por HTTP POST
+        a /api/equipos/{id}/registros/ para mayor confiabilidad.
+        El WebSocket solo se usa para notificaciones en tiempo real.
         """
         tipo = content.get('tipo')
         
-        if tipo == 'registrar_tiempo':
-            await self.manejar_registro_tiempo(content)
-        elif tipo == 'registrar_tiempos':
-            await self.manejar_registro_tiempos_batch(content)
-        elif tipo == 'ping':
+        if tipo == 'ping':
             # Responder al heartbeat
             await self.send_json({
                 'tipo': 'pong',
                 'mensaje': 'Conexión activa'
+            })
+        elif tipo == 'registrar_tiempo' or tipo == 'registrar_tiempos':
+            # Informar al cliente que debe usar HTTP
+            await self.send_json({
+                'tipo': 'error',
+                'mensaje': 'Los registros ahora se envían por HTTP POST a /api/equipos/{id}/registros/',
+                'usar_http': True
             })
         else:
             # Mensaje no reconocido
@@ -269,8 +272,8 @@ class JuezConsumer(AsyncJsonWebsocketConsumer):
         
         try:
             # Log de debug: recibimos el mensaje
-            logger.info(f"[BATCH] Juez {self.juez.username} - Recibido batch para equipo {content.get('equipo_id')}")
-            logger.info(f"[BATCH] Total registros en batch: {len(content.get('registros', []))}")
+            logger.debug("[BATCH] Batch recibido: juez=%s equipo_id=%s", self.juez.username, content.get('equipo_id'))
+            logger.debug("[BATCH] Total registros recibidos: %s", len(content.get('registros', [])))
             
             # Validar datos del batch
             es_valido, error = validar_datos_batch(content)
@@ -296,7 +299,13 @@ class JuezConsumer(AsyncJsonWebsocketConsumer):
             )
             
             # Log de resultado
-            logger.info(f"[BATCH] Resultado - Guardados: {resultado['total_guardados']}, Fallidos: {resultado['total_fallidos']}")
+            logger.info(
+                "[BATCH] Resultado: guardados=%s fallidos=%s juez=%s equipo_id=%s",
+                resultado['total_guardados'],
+                resultado['total_fallidos'],
+                self.juez.username,
+                equipo_id,
+            )
             
             if resultado['total_fallidos'] > 0:
                 logger.warning(f"[BATCH] Detalles de fallos: {resultado['registros_fallidos']}")
@@ -311,7 +320,7 @@ class JuezConsumer(AsyncJsonWebsocketConsumer):
                 'registros_fallidos': resultado['registros_fallidos']
             })
             
-            logger.info(f"[BATCH] Respuesta enviada al cliente")
+            logger.debug("[BATCH] Respuesta enviada al cliente")
             
         except Exception as e:
             logger.error(f"[BATCH] Error crítico: {str(e)}", exc_info=True)
@@ -328,8 +337,8 @@ class JuezConsumer(AsyncJsonWebsocketConsumer):
         import logging
         logger = logging.getLogger(__name__)
         
-        logger.info(f"🔔 MÉTODO competencia_iniciada EJECUTADO para juez {self.juez_id}")
-        logger.info(f"   Event recibido: {event}")
+        # Evento frecuente: mantener en DEBUG para evitar ruido.
+        logger.debug("Event competencia_iniciada received juez_id=%s", self.juez_id)
         
         data = event.get('data', {})
         
@@ -344,11 +353,10 @@ class JuezConsumer(AsyncJsonWebsocketConsumer):
             }
         }
         
-        logger.info(f"   📤 Enviando al cliente: {mensaje_a_enviar}")
+        logger.debug("Sending competencia_iniciada to client juez_id=%s", self.juez_id)
         
         await self.send_json(mensaje_a_enviar)
-        
-        logger.info(f"   ✅ Mensaje enviado exitosamente al juez {self.juez_id}")
+        logger.debug("competencia_iniciada sent juez_id=%s", self.juez_id)
         
     
     async def competencia_detenida(self, event):
@@ -358,8 +366,7 @@ class JuezConsumer(AsyncJsonWebsocketConsumer):
         import logging
         logger = logging.getLogger(__name__)
         
-        logger.info(f"🔔 MÉTODO competencia_detenida EJECUTADO para juez {self.juez_id}")
-        logger.info(f"   Event recibido: {event}")
+        logger.debug("Event competencia_detenida received juez_id=%s", self.juez_id)
         
         data = event.get('data', {})
         
@@ -375,8 +382,89 @@ class JuezConsumer(AsyncJsonWebsocketConsumer):
             }
         }
         
-        logger.info(f"   📤 Enviando al cliente: {mensaje_a_enviar}")
+        logger.debug("Sending competencia_detenida to client juez_id=%s", self.juez_id)
         
         await self.send_json(mensaje_a_enviar)
         
-        logger.info(f"   ✅ Mensaje enviado exitosamente al juez {self.juez_id}")
+        logger.debug("competencia_detenida sent juez_id=%s", self.juez_id)
+
+    async def registros_actualizados(self, event):
+        """
+        Notifica al cliente que hay nuevos registros de tiempo.
+        Este evento se dispara cuando se guardan registros por HTTP.
+        Permite actualizar la UI en tiempo real.
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        logger.debug("Event registros_actualizados received juez_id=%s", self.juez_id)
+        
+        data = event.get('data', {})
+        
+        mensaje_a_enviar = {
+            'tipo': 'registros_actualizados',
+            'equipo': {
+                'id': data.get('equipo_id'),
+                'nombre': data.get('equipo_nombre'),
+                'dorsal': data.get('equipo_dorsal'),
+            },
+            'total_registros': data.get('total_registros'),
+            'tiempo_total': data.get('tiempo_total'),
+        }
+        
+        await self.send_json(mensaje_a_enviar)
+
+        logger.debug("registros_actualizados sent juez_id=%s", self.juez_id)
+
+
+class CompetenciaPublicConsumer(AsyncJsonWebsocketConsumer):
+    """Consumer WebSocket público para ver resultados en vivo.
+
+    Se suscribe al grupo `competencia_<id>` y reenvía eventos al navegador.
+    """
+
+    async def connect(self):
+        competencia_id = str(self.scope['url_route']['kwargs'].get('competencia_id'))
+        if not competencia_id:
+            await self.close(code=4400)
+            return
+
+        self.competencia_id = competencia_id
+        self.group_name = f'competencia_{self.competencia_id}'
+
+        await self.channel_layer.group_add(self.group_name, self.channel_name)
+        await self.accept()
+
+        await self.send_json({
+            'tipo': 'conexion_establecida',
+            'competencia_id': int(self.competencia_id),
+        })
+
+    async def disconnect(self, close_code):
+        try:
+            await self.channel_layer.group_discard(self.group_name, self.channel_name)
+        except Exception:
+            pass
+
+    async def receive_json(self, content, **kwargs):
+        if content.get('tipo') == 'ping':
+            await self.send_json({'tipo': 'pong'})
+
+    async def registros_actualizados(self, event):
+        data = event.get('data', {})
+        await self.send_json({
+            'tipo': 'registros_actualizados',
+            'data': data,
+        })
+
+    async def competencia_iniciada(self, event):
+        await self.send_json({
+            'tipo': 'competencia_iniciada',
+            'data': event.get('data', {}),
+        })
+
+    async def competencia_detenida(self, event):
+        await self.send_json({
+            'tipo': 'competencia_detenida',
+            'data': event.get('data', {}),
+        })
